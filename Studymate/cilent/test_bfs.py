@@ -2,7 +2,7 @@ import requests
 import json
 
 # The URL for your local BFS endpoint
-url = "http://127.0.0.1:8001/python/bfs"
+url = "http://127.0.0.1:8000/python/bfs"
 
 # The graph data, now sent as a dictionary (adjacency list)
 data = {

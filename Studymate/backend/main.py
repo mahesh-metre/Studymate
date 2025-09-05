@@ -1,41 +1,48 @@
-from pathlib import Path
-import json
-import subprocess
-from typing import List, Dict, Any
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
+from typing import Dict, List
+from fastapi.middleware.cors import CORSMiddleware
 
-# Import the step-by-step functions
-from backend.algorithms.wavearray import wavearray_steps
-from backend.algorithms.bfs import bfs_steps
+app = FastAPI()
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-BACKEND_DIR = PROJECT_ROOT / "backend"
-CPP_DIR = BACKEND_DIR / "cpp"
+# Allow frontend to access API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-app = FastAPI(title="Algorithms API", version="1.0.0")
-
-class WaveArrayRequest(BaseModel):
-    numbers: List[int]
-
-# This MUST accept a 'graph' dictionary
-class BFSRequest(BaseModel):
+class GraphData(BaseModel):
     graph: Dict[str, List[int]]
     start: int
 
-@app.post("/python/wavearray")
-def wavearray_py(req: WaveArrayRequest) -> Dict[str, Any]:
-    return wavearray_steps(req.numbers)
-
 @app.post("/python/bfs")
-def bfs_py(req: BFSRequest) -> Dict[str, Any]:
-    # Convert string keys from JSON to integers
-    graph_int_keys = {int(k): v for k, v in req.graph.items()}
-    # Call the correct function
-    return bfs_steps(graph_int_keys, req.start)
+def bfs_endpoint(data: GraphData):
+    graph = {int(k): v for k, v in data.graph.items()}
+    start = data.start
 
-# --- (The rest of your file can stay the same, but this simplified version is safer) ---
-@app.get("/")
-def root() -> dict:
-    return {"status": "ok"}
+    visited = set()
+    queue = []
+    steps = []
+    order_so_far = []
+
+    queue.append(start)
+
+    while queue:
+        current = queue.pop(0)
+        if current not in visited:
+            visited.add(current)
+            order_so_far.append(current)
+            for neighbor in graph.get(current, []):
+                if neighbor not in visited and neighbor not in queue:
+                    queue.append(neighbor)
+
+        steps.append({
+            "current": current,
+            "queue": queue.copy(),
+            "visited": list(visited),
+            "order_so_far": order_so_far.copy()
+        })
+
+    return {"steps": steps, "final_order": order_so_far}
