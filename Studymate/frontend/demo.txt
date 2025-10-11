@@ -1,2 +1,0 @@
-git add frontend/
-git commit -m "Added frontend folder with README"
