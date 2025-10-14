@@ -57,7 +57,7 @@ const NavLink = ({ text, icon, isPrimary = false }) => {
 const Navbar = () => (
   <nav className="flex justify-between items-center p-4 md:p-6 text-white max-w-7xl mx-auto relative z-20">
     <div className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-      PixlrAI
+      <span><img src="/public/logo.jpg" alt="" className='w-25 h-25' /></span>
     </div>
     <div className="flex items-center space-x-6 md:space-x-8">
      <NavLink text="Help" icon="❓" />
