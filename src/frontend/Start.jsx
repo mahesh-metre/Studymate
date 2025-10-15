@@ -1,39 +1,21 @@
-import React, { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { link } from 'framer-motion/client';
-// --- Gemini API Constants ---
-const API_KEY = ""; // Injected at runtime
-const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
+import React from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import logo from "/public/logo.png";
 
-// --- Utility: Retry Fetch ---
-const retryFetch = async (url, options, maxRetries = 5) => {
-  let lastError = null;
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const response = await fetch(url, options);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      lastError = error;
-      const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-      if (i < maxRetries - 1) await new Promise((res) => setTimeout(res, delay));
-    }
-  }
-  throw new Error(`Failed after ${maxRetries} attempts. Last error: ${lastError.message}`);
-};
-
-// --- Components ---
 const NavLink = ({ text, icon, isPrimary = false }) => {
-  const baseClasses = "flex items-center space-x-2 text-sm font-semibold px-4 py-2 rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap";
+  const base =
+    "flex items-center space-x-2 text-sm md:text-base font-semibold px-4 py-2 rounded-full transition-all duration-300 cursor-pointer whitespace-nowrap";
 
   if (isPrimary) {
     return (
       <motion.a
-        href="#"
-        whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(236,72,153,0.9)" }}
-        transition={{ type: "spring", stiffness: 300 }}
-        className={`${baseClasses} bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md shadow-purple-800/50`}
+        whileHover={{
+          scale: 1.05,
+          boxShadow: "0 0 20px rgba(236,72,153,0.6)",
+        }}
+        transition={{ type: "spring", stiffness: 200 }}
+        className={`${base} bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md shadow-purple-800/40`}
       >
         {icon && <span>{icon}</span>}
         <span>{text}</span>
@@ -43,10 +25,13 @@ const NavLink = ({ text, icon, isPrimary = false }) => {
 
   return (
     <motion.a
-      href="#"
-      whileHover={{ scale: 1.05, backgroundColor: "rgba(55,65,85,0.9)", color: "#fff" }}
-      transition={{ type: "spring", stiffness: 300 }}
-      className={`${baseClasses} text-gray-300 bg-gray-900/50 border border-purple-900 hover:border-purple-600 hover:text-white`}
+      whileHover={{
+        scale: 1.05,
+        backgroundColor: "rgba(55,65,85,0.9)",
+        color: "#fff",
+      }}
+      transition={{ type: "spring", stiffness: 200 }}
+      className={`${base} text-gray-300 bg-gray-900/50 border border-purple-900 hover:border-purple-600 hover:text-white`}
     >
       {icon && <span>{icon}</span>}
       <span>{text}</span>
@@ -55,131 +40,170 @@ const NavLink = ({ text, icon, isPrimary = false }) => {
 };
 
 const Navbar = () => (
-  <nav className="flex justify-between items-center p-4 md:p-6 text-white max-w-7xl mx-auto relative z-20">
-    <div className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-      <span><img src="/public/logo.jpg" alt="" className='w-25 h-25' /></span>
+  <motion.nav
+    className="flex justify-between items-center p-4 md:p-6 text-white max-w-7xl mx-auto relative z-20 w-full"
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 1.2, ease: "easeInOut" }}
+  >
+    {/* Animated Logo */}
+    <motion.div
+      className="flex items-center space-x-2"
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{
+        delay: 0.3,
+        duration: 1.2,
+        type: "spring",
+        stiffness: 100,
+      }}
+    >
+      <motion.img
+        src={logo}
+        alt="Logo"
+        className="w-36 h-36 sm:w-44 sm:h-44 object-contain rounded-full shadow-lg"
+        animate={{
+          rotate: [0, 5, -5, 0],
+          scale: [1, 1.04, 1],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 10,
+          ease: "easeInOut",
+        }}
+      />
+    </motion.div>
+
+    <div className="flex items-center space-x-3 sm:space-x-5 md:space-x-8">
+      <NavLink text="Help" icon="❓" />
+      <Link to="/login">
+        <NavLink text="Log In" icon="👤" />
+      </Link>
+      <Link to="/login">
+        <NavLink text="Sign Up" icon="📝" isPrimary={true} />
+      </Link>
     </div>
-    <div className="flex items-center space-x-6 md:space-x-8">
-     <NavLink text="Help" icon="❓" />
-     <Link to="/login"><NavLink text="Log In" icon="👤" /></Link>
-      <Link to="/login"><NavLink text="Sign Up" icon="📝" isPrimary={true} /></Link>
-    </div>
-  </nav>
+  </motion.nav>
 );
 
-const FeatureCard = ({ title, icon, isHighlighted = false }) => {
-  const baseClasses = "flex flex-col items-center justify-center p-6 rounded-xl border transition-all duration-500 cursor-pointer w-full max-w-[280px]";
-
-  if (isHighlighted) {
-    return (
-      
-      <motion.button
-        whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(168,85,247,0.7)" }}
-        className={`${baseClasses} bg-gradient-to-r from-purple-600 to-pink-500 border-transparent shadow-lg shadow-purple-900`}
-      >
-        <span className="text-3xl mb-2">{icon}</span>
-        <h3 className="text-white text-lg font-semibold">{title}</h3>
-      </motion.button>
-      
-    );
-  }
-
-  return (
-    <Link to="/login">
-    <motion.button
-      whileHover={{ scale: 1.03, borderColor: "#A855F7", color: "#fff" }}
-      className={`${baseClasses} bg-gray-900/50 border-purple-900 text-gray-200 hover:bg-gray-800/70`}
-    >
-      <span className="text-3xl mb-2 text-purple-400">{icon}</span>
-      <h3 className="text-lg font-semibold">{title}</h3>
-    </motion.button>
-  </Link>
-  );
-};
-
-// --- Main App ---
 const App = () => {
-  const mainTitleClass =
-    "text-6xl md:text-8xl font-extrabold mb-8 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-400";
+  const title = "Decipher";
 
-  const [inputConcept, setInputConcept] = useState('An ethereal portrait of a fox in a deep forest');
-  const [marketingCopy, setMarketingCopy] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const letterContainer = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
 
-  const generateCopy = useCallback(async () => {
-    if (!inputConcept.trim()) {
-      setError("Please enter a creative concept.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setMarketingCopy('');
-
-    const systemPrompt =
-      "You are a world-class marketing copywriter specializing in digital media. Create a catchy, three-line blurb for a newly generated image or video, including a powerful one-sentence slogan and two bullet points describing its key features or emotional impact. Respond only with the copy, formatted using Markdown for bullet points and strong text.";
-
-    const userQuery = `Generate marketing copy for this creative concept: "${inputConcept}"`;
-
-    const payload = {
-      contents: [{ parts: [{ text: userQuery }] }],
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      tools: [{ google_search: {} }],
-    };
-
-    const options = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    };
-
-    try {
-      const result = await retryFetch(`${API_URL}?key=${API_KEY}`, options);
-      const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
-
-      let formattedText = generatedText.replace(/^\* (.*)$/gm, '<li>$1</li>');
-      if (formattedText.includes('<li>')) formattedText = `<ul>${formattedText}</ul>`;
-      formattedText = formattedText.replace(/\n/g, '<br />');
-
-      setMarketingCopy(formattedText);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to generate copy. Please check your concept or try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [inputConcept]);
+  const letterVariant = {
+    hidden: { opacity: 0, y: 60 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring", stiffness: 100, damping: 15 },
+    },
+  };
 
   return (
-    <div className="min-h-screen bg-gray-900 overflow-hidden font-sans relative">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-color-purple-950)_0%,_#000000_100%)] opacity-80 z-0"></div>
+    <div className="min-h-screen bg-gray-900 overflow-hidden font-sans relative flex flex-col justify-between select-none">
+      {/* Animated Background */}
+      <motion.div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#350062_0%,_#000000_100%)] z-0"
+        animate={{
+          backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 25,
+          ease: "easeInOut",
+        }}
+      ></motion.div>
 
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col justify-between h-full">
+        {/* Navbar */}
         <Navbar />
 
         {/* Hero Section */}
-        <header className="py-20 text-center max-w-4xl  mx-auto px-4">
-          <h1 className='text-6xl md:text-8xl font-extrabold mb-5 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-400 leading-[1.3]'>Decipher</h1>
-          <h2 className="text-xl md:text-3xl font-bold mt-6 text-gray-300 mb-6">
-           Your AI-powered Code companion for smarter learning.
-          </h2>
-          <p className="text-lg font-bold text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-            code visualization which helps you to understand code better and faster.
-          </p>
+        <header className="py-20 text-center max-w-4xl mx-auto px-4 flex-grow flex flex-col justify-center overflow-hidden">
+          <motion.h1
+            className="relative text-5xl sm:text-6xl md:text-8xl font-extrabold mb-5 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-300 leading-[1.2]"
+            variants={letterContainer}
+            initial="hidden"
+            animate="visible"
+            whileHover={{
+              scale: 1.03,
+              textShadow:
+                "0 0 10px rgba(236,72,153,0.4), 0 0 25px rgba(147,51,234,0.4)",
+            }}
+          >
+            {title.split("").map((char, i) => (
+              <motion.span
+                key={i}
+                variants={letterVariant}
+                className="transition-all duration-700 hover:text-pink-300"
+              >
+                {char}
+              </motion.span>
+            ))}
+          </motion.h1>
+
+          <motion.h2
+            className="text-lg sm:text-xl md:text-2xl font-bold mt-6 text-gray-300 mb-6"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.8, duration: 1 }}
+          >
+            Your AI-powered Code companion for smarter learning.
+          </motion.h2>
+
+          <motion.p
+            className="text-base sm:text-lg font-bold text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.1, duration: 1 }}
+          >
+            Code visualization that helps you understand complex logic better and faster.
+          </motion.p>
 
           <Link to="/login">
-          <motion.button
-            whileHover={{ scale: 1.05, boxShadow: '0 0 35px rgba(236,72,153,0.9)' }}
-            className="mb-20 px-10 py-4 text-lg font-bold rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-2xl shadow-purple-800/60 transition-all duration-300"
-          >
-            START visual creation
-          </motion.button>
-          </Link>
-          </header>
+            <motion.button
+              className="relative px-8 sm:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-full text-white shadow-lg shadow-purple-900/50 transition-all duration-700 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 overflow-hidden"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 2.4, duration: 1 }}
+              whileHover={{
+                scale: 1.1,
+                background:
+                  "linear-gradient(120deg, #a855f7, #ec4899, #a855f7)",
+                boxShadow:
+                  "0 0 25px rgba(236,72,153,0.6), 0 0 60px rgba(147,51,234,0.4)",
+              }}
+              whileTap={{ scale: 0.96 }}
+            >
+              <span className="relative z-10">START Visual Creation</span>
 
-        <footer className="w-full py-4 text-center text-xs text-gray-500 ">
-          © 2025 Studymate. All rights reserved.
+              {/* Light Sweep Effect */}
+              <motion.span
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0"
+                whileHover={{
+                  opacity: 1,
+                  x: ["-100%", "100%"],
+                }}
+                transition={{
+                  duration: 1.2,
+                  ease: "easeInOut",
+                }}
+              ></motion.span>
+            </motion.button>
+          </Link>
+        </header>
+
+        {/* Footer */}
+        <footer className="w-full py-3 text-center text-xs text-gray-500 mb-2">
+          © 2025 Decipher. All rights reserved.
         </footer>
       </div>
     </div>

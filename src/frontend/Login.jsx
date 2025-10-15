@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { User, Mail, Lock, LogIn, UserPlus } from "lucide-react";
 
 const LoginRegister = () => {
-  const [active, setActive] = useState(false); // false = login active, true = register active
+  const [active, setActive] = useState(false); // false = login, true = register
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [registerData, setRegisterData] = useState({ username: "", email: "", password: "" });
 
@@ -11,30 +11,28 @@ const LoginRegister = () => {
   };
 
   const inputClass =
-    "w-full py-3 pl-5 pr-10 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none shadow-sm transition-all";
+    "w-full py-3 pl-5 pr-10 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none shadow-sm transition-all duration-300";
 
   const buttonPrimaryClass =
-    "w-full py-3 bg-violet-600 text-white rounded-lg font-semibold text-lg transition-colors hover:bg-violet-700 shadow-xl shadow-violet-200/50";
+    "w-full py-3 bg-violet-600 text-white rounded-lg font-semibold text-lg transition-all duration-300 hover:bg-violet-700 shadow-xl shadow-violet-200/50 flex justify-center items-center";
 
   const SocialIcons = () => (
-    <div className="flex justify-center gap-4 text-3xl mt-4">
-      <a href="#" className="text-gray-700 hover:scale-110 transition-transform">
-        <i className="fab fa-google"></i>
-      </a>
-      <a href="#" className="text-gray-700 hover:scale-110 transition-transform">
-        <i className="fab fa-facebook-f"></i>
-      </a>
-      <a href="#" className="text-gray-700 hover:scale-110 transition-transform">
-        <i className="fab fa-github"></i>
-      </a>
-      <a href="#" className="text-gray-700 hover:scale-110 transition-transform">
-        <i className="fab fa-linkedin-in"></i>
-      </a>
+    <div className="flex justify-center gap-5 text-2xl mt-4">
+      {["google", "facebook-f", "github", "linkedin-in"].map((icon, i) => (
+        <a
+          key={i}
+          href="#"
+          className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
+        >
+          <i className={`fab fa-${icon}`}></i>
+        </a>
+      ))}
     </div>
   );
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4 font-sans">
+      {/* Font Awesome */}
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -43,22 +41,22 @@ const LoginRegister = () => {
       <div className="relative w-full max-w-[850px] h-[550px] rounded-[30px] shadow-2xl overflow-hidden">
         {/* Sliding Blue Panel */}
         <div
-          className={`absolute top-0 w-1/2 h-full bg-gradient-to-br from-indigo-700 to-violet-700 rounded-[30px] z-20 transition-all duration-700 ease-in-out flex flex-col justify-center items-center text-white p-12`}
+          className={`absolute top-0 w-1/2 h-full bg-gradient-to-br from-indigo-700 to-violet-700 rounded-[30px] z-20 flex flex-col justify-center items-center text-white p-12 transition-all duration-700 ease-in-out`}
           style={{ left: active ? "0%" : "50%" }}
         >
-          <h1 className="text-3xl font-bold mb-4 text-center">
+          <h1 className="text-3xl font-bold mb-4 text-center animate-fadeIn">
             {active ? "Welcome Back!" : "Hello, Friend!"}
           </h1>
-          <p className="mb-6 text-center text-sm font-light">
+          <p className="mb-6 text-center text-md font-semibold animate-fadeIn delay-100">
             {active
               ? "To keep connected with us, please login with your personal info."
               : "Enter your personal details and start your journey with us."}
           </p>
           <button
             onClick={() => setActive(!active)}
-            className="px-8 py-2 border-2 border-white rounded-full font-semibold bg-transparent hover:bg-white hover:text-violet-600 transition-all shadow-lg transform hover:scale-[1.05]"
+            className="px-8 py-2 border-2 border-white rounded-full font-semibold bg-transparent hover:bg-white hover:text-violet-600 transition-all shadow-lg transform hover:scale-110 animate-pulse"
           >
-            {active ? "Login" : "Sign in"}
+            {active ? "Login" : "Sign up"}
           </button>
         </div>
 
@@ -66,12 +64,12 @@ const LoginRegister = () => {
         <div className="absolute top-0 w-full h-full flex">
           {/* LOGIN Form */}
           <div
-            className={`w-1/2 h-full bg-white p-12 flex flex-col justify-center transition-all duration-700 ease-in-out z-10 ${
+            className={`w-1/2 h-full bg-white p-12 flex flex-col justify-center items-center transition-all duration-700 ease-in-out z-10 ${
               active ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100 pointer-events-auto"
             }`}
           >
-            <form className="w-full max-w-xs mx-auto text-center">
-              <h1 className="text-3xl font-bold mb-8 text-violet-700">LogIn</h1>
+            <form className="w-full max-w-xs text-center">
+              <h1 className="text-3xl font-bold mb-8 text-violet-700 animate-slideDown">Log In</h1>
               <div className="relative mb-6">
                 <input
                   type="text"
@@ -97,18 +95,6 @@ const LoginRegister = () => {
               <button type="submit" className={buttonPrimaryClass}>
                 <LogIn className="inline h-5 w-5 mr-2 -mt-1" /> Login
               </button>
-              <p className="text-sm mt-6 text-gray-600">
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setActive(true);
-                  }}
-                  className="font-semibold text-violet-600 hover:text-violet-800 transition-colors"
-                >
-                  Don't have an account? Sign Up
-                </a>
-              </p>
               <p className="text-sm mt-4 mb-3 text-gray-500">or use social platforms</p>
               <SocialIcons />
             </form>
@@ -116,12 +102,12 @@ const LoginRegister = () => {
 
           {/* REGISTER Form */}
           <div
-            className={`w-1/2 h-full bg-white p-12 flex flex-col justify-center transition-all duration-700 ease-in-out z-10 ${
+            className={`w-1/2 h-full bg-white p-12 flex flex-col justify-center items-center transition-all duration-700 ease-in-out z-10 ${
               active ? "translate-x-0 opacity-100 pointer-events-auto" : "-translate-x-full opacity-0 pointer-events-none"
             }`}
           >
-            <form className="w-full max-w-xs mx-auto text-center">
-              <h1 className="text-3xl font-bold mb-8 text-violet-700">Create Account</h1>
+            <form className="w-full max-w-xs text-center">
+              <h1 className="text-3xl font-bold mb-8 text-violet-700 animate-slideDown">Create Account</h1>
               <div className="relative mb-4">
                 <input
                   type="text"
@@ -158,24 +144,29 @@ const LoginRegister = () => {
               <button type="submit" className={buttonPrimaryClass}>
                 <UserPlus className="inline h-5 w-5 mr-2 -mt-1" /> Register
               </button>
-              <p className="text-sm mt-6 text-gray-600">
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setActive(false);
-                  }}
-                  className="font-semibold text-violet-600 hover:text-violet-800 transition-colors"
-                >
-                  Already have an account? Login
-                </a>
-              </p>
               <p className="text-sm mt-4 mb-3 text-gray-500">or use social platforms</p>
               <SocialIcons />
             </form>
           </div>
         </div>
       </div>
+
+      {/* Tailwind Animations */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fadeIn { animation: fadeIn 0.7s ease forwards; }
+          
+          @keyframes slideDown {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          .animate-slideDown { animation: slideDown 0.7s ease forwards; }
+        `}
+      </style>
     </div>
   );
 };
