@@ -1,13 +1,31 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, LogIn, UserPlus } from "lucide-react";
 
 const LoginRegister = () => {
+  const navigate = useNavigate();
   const [active, setActive] = useState(false); // false = login, true = register
   const [loginData, setLoginData] = useState({ username: "", password: "" });
-  const [registerData, setRegisterData] = useState({ username: "", email: "", password: "" });
+  const [registerData, setRegisterData] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
 
   const handleInputChange = (setter) => (e) => {
     setter((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // ✅ Redirect to Codepage
+    navigate("/codepage");
+  };
+
+  const handleSignup = (e) => {
+    e.preventDefault();
+    // ✅ Redirect to Codepage after signing up
+    navigate("/codepage");
   };
 
   const inputClass =
@@ -32,7 +50,6 @@ const LoginRegister = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4 font-sans">
-      {/* Font Awesome */}
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -65,11 +82,15 @@ const LoginRegister = () => {
           {/* LOGIN Form */}
           <div
             className={`w-1/2 h-full bg-white p-12 flex flex-col justify-center items-center transition-all duration-700 ease-in-out z-10 ${
-              active ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100 pointer-events-auto"
+              active
+                ? "translate-x-full opacity-0 pointer-events-none"
+                : "translate-x-0 opacity-100 pointer-events-auto"
             }`}
           >
-            <form className="w-full max-w-xs text-center">
-              <h1 className="text-3xl font-bold mb-8 text-violet-700 animate-slideDown">Log In</h1>
+            <form onSubmit={handleLogin} className="w-full max-w-xs text-center">
+              <h1 className="text-3xl font-bold mb-8 text-violet-700 animate-slideDown">
+                Log In
+              </h1>
               <div className="relative mb-6">
                 <input
                   type="text"
@@ -95,7 +116,9 @@ const LoginRegister = () => {
               <button type="submit" className={buttonPrimaryClass}>
                 <LogIn className="inline h-5 w-5 mr-2 -mt-1" /> Login
               </button>
-              <p className="text-sm mt-4 mb-3 text-gray-500">or use social platforms</p>
+              <p className="text-sm mt-4 mb-3 text-gray-500">
+                or use social platforms
+              </p>
               <SocialIcons />
             </form>
           </div>
@@ -103,11 +126,15 @@ const LoginRegister = () => {
           {/* REGISTER Form */}
           <div
             className={`w-1/2 h-full bg-white p-12 flex flex-col justify-center items-center transition-all duration-700 ease-in-out z-10 ${
-              active ? "translate-x-0 opacity-100 pointer-events-auto" : "-translate-x-full opacity-0 pointer-events-none"
+              active
+                ? "translate-x-0 opacity-100 pointer-events-auto"
+                : "-translate-x-full opacity-0 pointer-events-none"
             }`}
           >
-            <form className="w-full max-w-xs text-center">
-              <h1 className="text-3xl font-bold mb-8 text-violet-700 animate-slideDown">Create Account</h1>
+            <form onSubmit={handleSignup} className="w-full max-w-xs text-center">
+              <h1 className="text-3xl font-bold mb-8 text-violet-700 animate-slideDown">
+                Create Account
+              </h1>
               <div className="relative mb-4">
                 <input
                   type="text"
@@ -142,16 +169,17 @@ const LoginRegister = () => {
                 <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
               </div>
               <button type="submit" className={buttonPrimaryClass}>
-                <UserPlus className="inline h-5 w-5 mr-2 -mt-1" /> Register
+                <UserPlus className="inline h-5 w-5 mr-2 -mt-1" /> Sign Up
               </button>
-              <p className="text-sm mt-4 mb-3 text-gray-500">or use social platforms</p>
+              <p className="text-sm mt-4 mb-3 text-gray-500">
+                or use social platforms
+              </p>
               <SocialIcons />
             </form>
           </div>
         </div>
       </div>
 
-      {/* Tailwind Animations */}
       <style>
         {`
           @keyframes fadeIn {
@@ -159,7 +187,7 @@ const LoginRegister = () => {
             100% { opacity: 1; transform: translateY(0); }
           }
           .animate-fadeIn { animation: fadeIn 0.7s ease forwards; }
-          
+
           @keyframes slideDown {
             0% { opacity: 0; transform: translateY(-20px); }
             100% { opacity: 1; transform: translateY(0); }
