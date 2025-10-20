@@ -5,7 +5,8 @@ import { History, Upload, Play } from "lucide-react";
 const Codepage = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [outputOpen, setOutputOpen] = useState(false);
-  const [code, setCode] = useState("// Write your code here...");
+  const [language, setLanguage] = useState("javascript");
+  const [code, setCode] = useState("// Write your code here...\nconsole.log('Hello, world!');");
   const [output, setOutput] = useState("");
   const [history, setHistory] = useState([]);
 
@@ -23,9 +24,17 @@ const Codepage = () => {
 
   // Handle run (simulate execution)
   const handleRun = () => {
-    setOutput("✅ Code executed successfully!\nOutput: Hello, world!");
-    setHistory((prev) => [code, ...prev]);
-    setOutputOpen(true); // Show output panel
+    if (language === "javascript") {
+      setOutput("✅ JavaScript executed successfully!\nOutput: Hello, world!");
+    } else if (language === "python") {
+      setOutput("🐍 Python code simulated.\nOutput: Hello, world!");
+    } else if (language === "c" || language === "cpp") {
+      setOutput("⚙ C/C++ code simulated.\nOutput: Hello, world!");
+    } else {
+      setOutput(`Execution for ${language} not yet integrated.`);
+    }
+    setHistory((prev) => [{ code, language }, ...prev]);
+    setOutputOpen(true);
   };
 
   return (
@@ -48,10 +57,14 @@ const Codepage = () => {
                 {history.map((item, index) => (
                   <li
                     key={index}
-                    onClick={() => setCode(item)}
+                    onClick={() => {
+                      setCode(item.code);
+                      setLanguage(item.language);
+                    }}
                     className="p-2 bg-gray-700 rounded hover:bg-gray-600 cursor-pointer text-sm transition"
                   >
-                    {item.slice(0, 30)}...
+                    <div className="font-semibold text-blue-400">{item.language.toUpperCase()}</div>
+                    {item.code.slice(0, 30)}...
                   </li>
                 ))}
               </ul>
@@ -63,7 +76,7 @@ const Codepage = () => {
       {/* ===== Main Editor Area ===== */}
       <div className="flex flex-col flex-1">
         {/* ==== Top Toolbar ==== */}
-        <div className="flex items-center gap-3 p-4 bg-gray-800 border-b border-gray-700">
+        <div className="flex items-center gap-3 p-4 bg-gray-800 border-b border-gray-700 flex-wrap">
           {/* History Button */}
           <button
             onClick={() => setHistoryOpen((prev) => !prev)}
@@ -79,11 +92,26 @@ const Codepage = () => {
             <span className="hidden sm:inline">Upload</span>
             <input
               type="file"
-              accept=".txt,.js,.py,.cpp,.java,.ts"
+              accept=".txt,.js,.py,.cpp,.c"
               onChange={handleFileUpload}
               className="hidden"
             />
           </label>
+
+          {/* Language Selector */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-300">Language:</label>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-sm focus:outline-none"
+            >
+              <option value="c">C</option>
+              <option value="cpp">C++</option>
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+            </select>
+          </div>
 
           {/* Run Button */}
           <button
