@@ -1,48 +1,33 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Dict, List
-from fastapi.middleware.cors import CORSMiddleware
+import subprocess
+import json
 
 app = FastAPI()
 
-# Allow frontend to access API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+class CodeRequest(BaseModel):
+    code: str
 
-class GraphData(BaseModel):
-    graph: Dict[str, List[int]]
-    start: int
+@app.post("/python/visualize")
+async def visualize_code(request: CodeRequest):
+    try:
+        # Save the user's code to a temp file
+        with open("temp_script.py", "w") as f:
+            f.write(request.code)
+        
+        # Run the script safely and capture the output
+        result = subprocess.run(
+            ["python", "temp_script.py"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        # Return stdout as JSON (must be valid JSON from the script)
+        output = result.stdout.strip()
+        return {"stdout": output, "stderr": result.stderr}
 
-@app.post("/python/bfs")
-def bfs_endpoint(data: GraphData):
-    graph = {int(k): v for k, v in data.graph.items()}
-    start = data.start
-
-    visited = set()
-    queue = []
-    steps = []
-    order_so_far = []
-
-    queue.append(start)
-
-    while queue:
-        current = queue.pop(0)
-        if current not in visited:
-            visited.add(current)
-            order_so_far.append(current)
-            for neighbor in graph.get(current, []):
-                if neighbor not in visited and neighbor not in queue:
-                    queue.append(neighbor)
-
-        steps.append({
-            "current": current,
-            "queue": queue.copy(),
-            "visited": list(visited),
-            "order_so_far": order_so_far.copy()
-        })
-
-    return {"steps": steps, "final_order": order_so_far}
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=408, detail="Execution timed out.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

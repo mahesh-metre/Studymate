@@ -34,19 +34,51 @@ const LoginRegister = () => {
   const buttonPrimaryClass =
     "w-full py-3 bg-violet-600 text-white rounded-lg font-semibold text-lg transition-all duration-300 hover:bg-violet-700 shadow-xl shadow-violet-200/50 flex justify-center items-center";
 
-  const SocialIcons = () => (
-    <div className="flex justify-center gap-5 text-2xl mt-4">
-      {["google", "facebook-f", "github", "linkedin-in"].map((icon, i) => (
-        <a
-          key={i}
-          href="#"
-          className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
-        >
-          <i className={`fab fa-${icon}`}></i>
-        </a>
-      ))}
-    </div>
-  );
+const SocialIcons = () => (
+  <div className="flex justify-center gap-5 text-2xl mt-4">
+    {/* Google */}
+    <a
+      href="https://www.google.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Google"
+      className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
+    >
+      <i className="fab fa-google"></i>
+    </a>
+
+    {/* Gmail */}
+    <a
+      href="mailto:example@gmail.com"
+      aria-label="Gmail"
+      className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
+    >
+      <i className="fas fa-envelope"></i>
+    </a>
+
+    {/* GitHub */}
+    <a
+      href="https://github.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="GitHub"
+      className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
+    >
+      <i className="fab fa-github"></i>
+    </a>
+
+    {/* LinkedIn */}
+    <a
+      href="https://linkedin.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="LinkedIn"
+      className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
+    >
+      <i className="fab fa-linkedin-in"></i>
+    </a>
+  </div>
+);
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4 font-sans">

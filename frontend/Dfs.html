@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algorithm Visualizer</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; background: #f9f9f9; }
+  header { background: #4CAF50; color: white; padding: 1rem; text-align: center; width: 100%; }
+  main { display: flex; gap: 1rem; margin-top: 1rem; width: 95%; max-width: 1200px; }
+  #codePanel { flex: 1; background: #f4f4f4; padding: 1rem; border-radius: 8px; height: 400px; overflow-y: auto; }
+  #visualPanel { flex: 2; background: #fff; padding: 1rem; border-radius: 8px; height: 400px; position: relative; }
+  #controls { margin-top: 1rem; }
+  button { padding: 0.5rem 1rem; margin: 0 0.2rem; cursor: pointer; }
+  #info { margin-top: 1rem; background: #eee; padding: 1rem; border-radius: 8px; width: 95%; max-width: 1200px; }
+  .bar { fill: steelblue; }
+  .bar.active { fill: orange; }
+  .node { fill: lightblue; stroke: #333; stroke-width: 1px; }
+  .node.visited { fill: lightgreen; }
+  text { font-size: 14px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Algorithm Visualizer</h1>
+</header>
+
+<main>
+  <div id="codePanel">
+    <pre id="code"></pre>
+  </div>
+  <div id="visualPanel"></div>
+</main>
+
+<div id="controls">
+  <button onclick="switchAlgorithm('DFS')">DFS</button>
+  <button onclick="switchAlgorithm('Bubble')">Bubble Sort</button>
+  <button id="prev">Previous</button>
+  <button id="play">Play</button>
+  <button id="next">Next</button>
+  <button id="reset">Reset</button>
+</div>
+
+<div id="info">
+  <h3>Step Info</h3>
+  <pre id="stepInfo"></pre>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+
+// ----------------- MOCK DATA -----------------
+const dfsSteps = {
+  code: `def dfs_steps(graph, start):
+    visited = set()
+    stack = [start]
+    order = []
+    steps = []
+    while stack:
+        node = stack.pop()
+        if node not in visited:
+            visited.add(node)
+            order.append(node)
+            steps.append({"current": node, "stack": list(stack), "visited": sorted(list(visited)), "order_so_far": list(order)})
+            for neighbor in reversed(graph.get(node, [])):
+                if neighbor not in visited:
+                    stack.append(neighbor)
+    return {"steps": steps, "final_order": order}`,
+  steps: [
+    { current: "A", stack: ["B","C"], visited: ["A"], order_so_far: ["A"] },
+    { current: "C", stack: ["B","D"], visited: ["A","C"], order_so_far: ["A","C"] },
+    { current: "D", stack: ["B"], visited: ["A","C","D"], order_so_far: ["A","C","D"] },
+    { current: "B", stack: [], visited: ["A","B","C","D"], order_so_far: ["A","C","D","B"] }
+  ]
+};
+
+const bubbleSteps = {
+  code: `numbers = [3,1,4,2]
+n = len(numbers)
+for i in range(n):
+    for j in range(0, n-i-1):
+        if numbers[j] > numbers[j+1]:
+            numbers[j], numbers[j+1] = numbers[j+1], numbers[j]`,
+  steps: [
+    { array: [1,3,4,2], currentIndices: [0,1] },
+    { array: [1,3,2,4], currentIndices: [1,2] },
+    { array: [1,2,3,4], currentIndices: [0,1] }
+  ]
+};
+
+// ----------------- GLOBAL STATE -----------------
+let steps = dfsSteps.steps; // Default algorithm
+let code = dfsSteps.code;
+let currentStep = 0;
+let interval = null;
+
+// ----------------- INITIALIZE -----------------
+document.getElementById("code").textContent = code;
+renderStep(currentStep);
+
+// ----------------- RENDER FUNCTION -----------------
+function renderStep(stepIndex) {
+  if (steps.length === 0) return;
+  const step = steps[stepIndex];
+
+  // Update step info
+  document.getElementById("stepInfo").textContent = JSON.stringify(step, null, 2);
+
+  // Clear previous visualization
+  const panel = d3.select("#visualPanel");
+  panel.selectAll("*").remove();
+
+  const svg = panel.append("svg")
+    .attr("width", "100%")
+    .attr("height", 400);
+
+  // DFS Visualization
+  if (step.current !== undefined) {
+    const nodes = Array.from(new Set([...step.visited, ...step.stack]));
+    nodes.forEach((n,i) => {
+      svg.append("circle")
+        .attr("cx", 50 + i * 60)
+        .attr("cy", 200)
+        .attr("r", 20)
+        .attr("class", "node" + (step.visited.includes(n) ? " visited" : ""));
+      
+      svg.append("text")
+        .attr("x", 50 + i*60)
+        .attr("y", 205)
+        .attr("text-anchor", "middle")
+        .attr("alignment-baseline", "middle")
+        .text(n);
+    });
+  }
+
+  // Bubble Sort Visualization
+  if (step.array !== undefined) {
+    svg.selectAll("rect")
+      .data(step.array)
+      .enter()
+      .append("rect")
+      .attr("x", (d,i) => i*40)
+      .attr("y", d => 400 - d*50)
+      .attr("width", 30)
+      .attr("height", d => d*50)
+      .attr("class", (d,i) => step.currentIndices?.includes(i) ? "bar active" : "bar");
+
+    svg.selectAll("text.value")
+      .data(step.array)
+      .enter()
+      .append("text")
+      .attr("x", (d,i) => i*40 + 15)
+      .attr("y", d => 400 - d*50 - 5)
+      .attr("text-anchor", "middle")
+      .attr("alignment-baseline", "baseline")
+      .text(d => d);
+  }
+}
+
+// ----------------- CONTROLS -----------------
+document.getElementById("next").onclick = () => {
+  currentStep = Math.min(currentStep + 1, steps.length - 1);
+  renderStep(currentStep);
+};
+document.getElementById("prev").onclick = () => {
+  currentStep = Math.max(currentStep - 1, 0);
+  renderStep(currentStep);
+};
+document.getElementById("play").onclick = () => {
+  if (interval) { clearInterval(interval); interval = null; return; }
+  interval = setInterval(() => {
+    if (currentStep < steps.length - 1) { currentStep++; renderStep(currentStep); } 
+    else clearInterval(interval);
+  }, 1000);
+};
+document.getElementById("reset").onclick = () => {
+  currentStep = 0;
+  renderStep(currentStep);
+};
+
+// ----------------- SWITCH ALGORITHM -----------------
+function switchAlgorithm(algo) {
+  if (algo === "DFS") { steps = dfsSteps.steps; code = dfsSteps.code; }
+  if (algo === "Bubble") { steps = bubbleSteps.steps; code = bubbleSteps.code; }
+  currentStep = 0;
+  document.getElementById("code").textContent = code;
+  renderStep(currentStep);
+}
+
+</script>
+</body>
+</html>
