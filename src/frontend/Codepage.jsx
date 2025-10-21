@@ -123,10 +123,14 @@ const Codepage = () => {
           </button>
         </div>
 
-        {/* ==== Editor & Output Area ==== */}
-        <div className="flex flex-1 relative overflow-hidden">
+        {/* ==== Editor & Output Split Area ==== */}
+        <div className="flex flex-1 transition-all duration-500">
           {/* Code Editor */}
-          <div className="flex-1 p-4">
+          <div
+            className={`p-4 transition-all duration-500 ${
+              outputOpen ? "w-1/2" : "w-full"
+            }`}
+          >
             <textarea
               className="w-full h-full font-mono text-sm bg-gray-900 border border-gray-700 rounded-xl p-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               value={code}
@@ -134,15 +138,15 @@ const Codepage = () => {
             />
           </div>
 
-          {/* Animated Output Panel */}
+          {/* Output Panel */}
           <AnimatePresence>
             {outputOpen && (
               <motion.div
-                initial={{ x: 500, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 500, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 80, damping: 15 }}
-                className="absolute right-0 top-0 h-full w-full md:w-1/3 bg-gray-850 border-l border-gray-700 p-4 backdrop-blur-xl shadow-2xl z-10"
+                initial={{ opacity: 0, x: 200 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 200 }}
+                transition={{ duration: 0.4 }}
+                className="w-1/2 p-4 border-l border-gray-700 bg-gray-850"
               >
                 <h3 className="font-semibold mb-2">Output:</h3>
                 <motion.div
