@@ -3,191 +3,246 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Algorithm Visualizer</title>
+<title>DFS Visualization Interactive</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
 <style>
-  body { font-family: Arial, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; background: #f9f9f9; }
-  header { background: #4CAF50; color: white; padding: 1rem; text-align: center; width: 100%; }
-  main { display: flex; gap: 1rem; margin-top: 1rem; width: 95%; max-width: 1200px; }
-  #codePanel { flex: 1; background: #f4f4f4; padding: 1rem; border-radius: 8px; height: 400px; overflow-y: auto; }
-  #visualPanel { flex: 2; background: #fff; padding: 1rem; border-radius: 8px; height: 400px; position: relative; }
-  #controls { margin-top: 1rem; }
-  button { padding: 0.5rem 1rem; margin: 0 0.2rem; cursor: pointer; }
-  #info { margin-top: 1rem; background: #eee; padding: 1rem; border-radius: 8px; width: 95%; max-width: 1200px; }
-  .bar { fill: steelblue; }
-  .bar.active { fill: orange; }
-  .node { fill: lightblue; stroke: #333; stroke-width: 1px; }
-  .node.visited { fill: lightgreen; }
-  text { font-size: 14px; font-weight: bold; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f7fb;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    color: #333;
+  }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  button {
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: none;
+    background-color: #4a90e2;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover {
+    background-color: #357ab8;
+  }
+  input[type="range"] {
+    width: 200px;
+  }
+  svg {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    margin: 0 auto;
+    display: block;
+  }
+  .node {
+    stroke: #555;
+    stroke-width: 2px;
+    fill: #ccc;
+  }
+  .visited {
+    fill: #6fcf97;
+  }
+  .current {
+    fill: #f2994a;
+  }
+  .edge {
+    stroke: #bbb;
+    stroke-width: 2px;
+  }
+  .stack-node {
+    fill: #56ccf2;
+    rx: 6;
+    ry: 6;
+  }
+  .stack-label {
+    fill: #fff;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .order {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+  }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Algorithm Visualizer</h1>
-</header>
+<h1>DFS Interactive Visualization</h1>
 
-<main>
-  <div id="codePanel">
-    <pre id="code"></pre>
-  </div>
-  <div id="visualPanel"></div>
-</main>
-
-<div id="controls">
-  <button onclick="switchAlgorithm('DFS')">DFS</button>
-  <button onclick="switchAlgorithm('Bubble')">Bubble Sort</button>
-  <button id="prev">Previous</button>
-  <button id="play">Play</button>
-  <button id="next">Next</button>
+<div class="controls">
+  <button id="start">Start</button>
+  <button id="prev">Previous Step</button>
+  <button id="next">Next Step</button>
   <button id="reset">Reset</button>
+  <label>Speed: <input type="range" id="speed" min="200" max="2000" value="1000"></label>
 </div>
 
-<div id="info">
-  <h3>Step Info</h3>
-  <pre id="stepInfo"></pre>
-</div>
+<svg width="900" height="400"></svg>
+<div class="order"><strong>Order so far:</strong> <span id="order"></span></div>
 
-<script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
-
-// ----------------- MOCK DATA -----------------
-const dfsSteps = {
-  code: `def dfs_steps(graph, start):
-    visited = set()
-    stack = [start]
-    order = []
-    steps = []
-    while stack:
-        node = stack.pop()
-        if node not in visited:
-            visited.add(node)
-            order.append(node)
-            steps.append({"current": node, "stack": list(stack), "visited": sorted(list(visited)), "order_so_far": list(order)})
-            for neighbor in reversed(graph.get(node, [])):
-                if neighbor not in visited:
-                    stack.append(neighbor)
-    return {"steps": steps, "final_order": order}`,
-  steps: [
-    { current: "A", stack: ["B","C"], visited: ["A"], order_so_far: ["A"] },
-    { current: "C", stack: ["B","D"], visited: ["A","C"], order_so_far: ["A","C"] },
-    { current: "D", stack: ["B"], visited: ["A","C","D"], order_so_far: ["A","C","D"] },
-    { current: "B", stack: [], visited: ["A","B","C","D"], order_so_far: ["A","C","D","B"] }
-  ]
+const graph = {
+  1: [2,3],
+  2: [4],
+  3: [],
+  4: []
 };
 
-const bubbleSteps = {
-  code: `numbers = [3,1,4,2]
-n = len(numbers)
-for i in range(n):
-    for j in range(0, n-i-1):
-        if numbers[j] > numbers[j+1]:
-            numbers[j], numbers[j+1] = numbers[j+1], numbers[j]`,
-  steps: [
-    { array: [1,3,4,2], currentIndices: [0,1] },
-    { array: [1,3,2,4], currentIndices: [1,2] },
-    { array: [1,2,3,4], currentIndices: [0,1] }
-  ]
-};
+const steps = [
+  {"current":1,"stack":[3,2],"visited":[1],"order_so_far":[1]},
+  {"current":2,"stack":[3,4],"visited":[1,2],"order_so_far":[1,2]},
+  {"current":4,"stack":[3],"visited":[1,2,4],"order_so_far":[1,2,4]},
+  {"current":3,"stack":[],"visited":[1,2,3,4],"order_so_far":[1,2,4,3]}
+];
 
-// ----------------- GLOBAL STATE -----------------
-let steps = dfsSteps.steps; // Default algorithm
-let code = dfsSteps.code;
+const svg = d3.select("svg");
+const width = +svg.attr("width");
+const height = +svg.attr("height");
+const nodeRadius = 25;
+
+const nodes = Object.keys(graph).map(d => +d);
+const xScale = d3.scalePoint().domain(nodes).range([100, width - 250]);
+const nodePositions = {};
+nodes.forEach((n,i) => { nodePositions[n] = { x: xScale(n), y: height/2 }; });
+
+const edges = [];
+for (let [from, neighbors] of Object.entries(graph)) {
+  neighbors.forEach(to => { edges.push({from: +from, to}); });
+}
+
+svg.append("defs").append("filter")
+  .attr("id", "shadow")
+  .append("feDropShadow")
+  .attr("dx", 2)
+  .attr("dy", 2)
+  .attr("stdDeviation", 2)
+  .attr("flood-color", "#999")
+  .attr("flood-opacity", 0.3);
+
+svg.selectAll(".edge")
+  .data(edges)
+  .enter()
+  .append("line")
+  .attr("class", "edge")
+  .attr("x1", d => nodePositions[d.from].x)
+  .attr("y1", d => nodePositions[d.from].y)
+  .attr("x2", d => nodePositions[d.to].x)
+  .attr("y2", d => nodePositions[d.to].y);
+
+const nodeGroup = svg.selectAll(".nodeGroup")
+  .data(nodes)
+  .enter()
+  .append("g")
+  .attr("class", "nodeGroup")
+  .attr("transform", d => `translate(${nodePositions[d].x},${nodePositions[d].y})`);
+
+nodeGroup.append("circle").attr("r", nodeRadius).attr("class", "node");
+nodeGroup.append("text")
+  .text(d => d)
+  .attr("text-anchor", "middle")
+  .attr("dy", 6)
+  .attr("font-size", "16px")
+  .attr("fill", "#fff")
+  .attr("font-weight", "bold");
+
+const stackX = width - 150;
+const stackYStart = 50;
+const stackSpacing = 50;
+
+function updateStep(step) {
+  svg.selectAll(".node")
+    .transition().duration(300)
+    .attr("class", d => {
+      if (d === step.current) return "node current";
+      else if (step.visited.includes(d)) return "node visited";
+      else return "node";
+    });
+
+  document.getElementById("order").textContent = step.order_so_far.join(", ");
+
+  const stackNodes = svg.selectAll(".stack-node").data(step.stack, d => d);
+  stackNodes.enter()
+    .append("rect")
+    .attr("class", "stack-node")
+    .attr("x", stackX)
+    .attr("width", 50)
+    .attr("height", 40)
+    .merge(stackNodes)
+    .transition().duration(300)
+    .attr("y", (d,i) => stackYStart + i*stackSpacing);
+  stackNodes.exit().remove();
+
+  const stackLabels = svg.selectAll(".stack-label").data(step.stack, d => d);
+  stackLabels.enter()
+    .append("text")
+    .attr("class", "stack-label")
+    .attr("x", stackX + 25)
+    .attr("text-anchor", "middle")
+    .attr("dy", 25)
+    .merge(stackLabels)
+    .transition().duration(300)
+    .attr("y", (d,i) => stackYStart + i*stackSpacing)
+    .text(d => d);
+  stackLabels.exit().remove();
+}
+
 let currentStep = 0;
 let interval = null;
+let speed = 1000;
 
-// ----------------- INITIALIZE -----------------
-document.getElementById("code").textContent = code;
-renderStep(currentStep);
-
-// ----------------- RENDER FUNCTION -----------------
-function renderStep(stepIndex) {
-  if (steps.length === 0) return;
-  const step = steps[stepIndex];
-
-  // Update step info
-  document.getElementById("stepInfo").textContent = JSON.stringify(step, null, 2);
-
-  // Clear previous visualization
-  const panel = d3.select("#visualPanel");
-  panel.selectAll("*").remove();
-
-  const svg = panel.append("svg")
-    .attr("width", "100%")
-    .attr("height", 400);
-
-  // DFS Visualization
-  if (step.current !== undefined) {
-    const nodes = Array.from(new Set([...step.visited, ...step.stack]));
-    nodes.forEach((n,i) => {
-      svg.append("circle")
-        .attr("cx", 50 + i * 60)
-        .attr("cy", 200)
-        .attr("r", 20)
-        .attr("class", "node" + (step.visited.includes(n) ? " visited" : ""));
-      
-      svg.append("text")
-        .attr("x", 50 + i*60)
-        .attr("y", 205)
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "middle")
-        .text(n);
-    });
-  }
-
-  // Bubble Sort Visualization
-  if (step.array !== undefined) {
-    svg.selectAll("rect")
-      .data(step.array)
-      .enter()
-      .append("rect")
-      .attr("x", (d,i) => i*40)
-      .attr("y", d => 400 - d*50)
-      .attr("width", 30)
-      .attr("height", d => d*50)
-      .attr("class", (d,i) => step.currentIndices?.includes(i) ? "bar active" : "bar");
-
-    svg.selectAll("text.value")
-      .data(step.array)
-      .enter()
-      .append("text")
-      .attr("x", (d,i) => i*40 + 15)
-      .attr("y", d => 400 - d*50 - 5)
-      .attr("text-anchor", "middle")
-      .attr("alignment-baseline", "baseline")
-      .text(d => d);
-  }
-}
-
-// ----------------- CONTROLS -----------------
-document.getElementById("next").onclick = () => {
-  currentStep = Math.min(currentStep + 1, steps.length - 1);
-  renderStep(currentStep);
-};
-document.getElementById("prev").onclick = () => {
-  currentStep = Math.max(currentStep - 1, 0);
-  renderStep(currentStep);
-};
-document.getElementById("play").onclick = () => {
-  if (interval) { clearInterval(interval); interval = null; return; }
+function startAuto() {
+  if(interval) clearInterval(interval);
   interval = setInterval(() => {
-    if (currentStep < steps.length - 1) { currentStep++; renderStep(currentStep); } 
-    else clearInterval(interval);
-  }, 1000);
-};
-document.getElementById("reset").onclick = () => {
-  currentStep = 0;
-  renderStep(currentStep);
-};
-
-// ----------------- SWITCH ALGORITHM -----------------
-function switchAlgorithm(algo) {
-  if (algo === "DFS") { steps = dfsSteps.steps; code = dfsSteps.code; }
-  if (algo === "Bubble") { steps = bubbleSteps.steps; code = bubbleSteps.code; }
-  currentStep = 0;
-  document.getElementById("code").textContent = code;
-  renderStep(currentStep);
+    if(currentStep >= steps.length) clearInterval(interval);
+    updateStep(steps[currentStep]);
+    currentStep++;
+  }, speed);
 }
 
+function nextStep() {
+  if(currentStep < steps.length) {
+    updateStep(steps[currentStep]);
+    currentStep++;
+  }
+}
+
+function prevStep() {
+  if(currentStep > 1) {
+    currentStep -= 2;
+    updateStep(steps[currentStep]);
+    currentStep++;
+  }
+}
+
+function reset() {
+  currentStep = 0;
+  updateStep({current:null, stack:[], visited:[], order_so_far:[]});
+  if(interval) clearInterval(interval);
+}
+
+document.getElementById("start").addEventListener("click", startAuto);
+document.getElementById("next").addEventListener("click", nextStep);
+document.getElementById("prev").addEventListener("click", prevStep);
+document.getElementById("reset").addEventListener("click", reset);
+document.getElementById("speed").addEventListener("input", e => { speed = +e.target.value; if(interval) startAuto(); });
+
+reset();
 </script>
+
 </body>
 </html>
