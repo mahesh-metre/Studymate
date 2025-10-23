@@ -1,33 +1,42 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
-import subprocess
-import json
+from fastapi.middleware.cors import CORSMiddleware
+import subprocess, sys, tempfile, json
 
 app = FastAPI()
+
+# --- Allow frontend to connect ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (safe for local dev)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class CodeRequest(BaseModel):
     code: str
 
 @app.post("/python/visualize")
-async def visualize_code(request: CodeRequest):
+def visualize_code(request: CodeRequest):
     try:
-        # Save the user's code to a temp file
-        with open("temp_script.py", "w") as f:
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".py") as f:
             f.write(request.code)
-        
-        # Run the script safely and capture the output
+            temp_file = f.name
+
         result = subprocess.run(
-            ["python", "temp_script.py"],
+            [sys.executable, temp_file],
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=5
         )
-        
-        # Return stdout as JSON (must be valid JSON from the script)
-        output = result.stdout.strip()
-        return {"stdout": output, "stderr": result.stderr}
 
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=408, detail="Execution timed out.")
+        try:
+            output = json.loads(result.stdout)
+        except:
+            output = {"steps": [], "final_order": result.stdout.strip()}
+
+        return output
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"steps": [], "final_order": str(e)}
