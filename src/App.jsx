@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Start from "./frontend/Start";
 import Login from "./frontend/Login";
 import Codepage from "./frontend/Codepage";
+import Python from "./frontend/python"; // Capitalized
 import "./index.css";
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<Start />} />
         <Route path="/login" element={<Login />} />
         <Route path="/codepage" element={<Codepage />} />
+        <Route path="/python" element={<Python />} />
       </Routes>
     </BrowserRouter>
   );

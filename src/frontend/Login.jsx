@@ -4,7 +4,7 @@ import { User, Mail, Lock, LogIn, UserPlus } from "lucide-react";
 
 const LoginRegister = () => {
   const navigate = useNavigate();
-  const [active, setActive] = useState(false); // false = login, true = register
+  const [active, setActive] = useState(false);
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [registerData, setRegisterData] = useState({
     username: "",
@@ -12,85 +12,50 @@ const LoginRegister = () => {
     password: "",
   });
 
-  const handleInputChange = (setter) => (e) => {
+  const handleInputChange = (setter) => (e) =>
     setter((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // ✅ Redirect to Codepage
     navigate("/codepage");
   };
 
   const handleSignup = (e) => {
     e.preventDefault();
-    // ✅ Redirect to Codepage after signing up
     navigate("/codepage");
   };
 
   const inputClass =
-    "w-full py-3 pl-5 pr-10 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none shadow-sm transition-all duration-300";
+    "w-full py-3 pl-5 pr-10 rounded-xl border border-gray-600 bg-gray-900 text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none shadow-md shadow-gray-800 transition-all duration-300";
 
   const buttonPrimaryClass =
-    "w-full py-3 bg-violet-600 text-white rounded-lg font-semibold text-lg transition-all duration-300 hover:bg-violet-700 shadow-xl shadow-violet-200/50 flex justify-center items-center";
+    "w-full py-3 bg-gradient-to-r from-violet-600 via-indigo-600 to-fuchsia-600 text-white rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-violet-700/40 shadow-xl flex justify-center items-center";
 
-const SocialIcons = () => (
-  <div className="flex justify-center gap-5 text-2xl mt-4">
-    {/* Google */}
-    <a
-      href="https://www.google.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Google"
-      className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
-    >
-      <i className="fab fa-google"></i>
-    </a>
-
-    {/* Gmail */}
-    <a
-      href="mailto:example@gmail.com"
-      aria-label="Gmail"
-      className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
-    >
-      <i className="fas fa-envelope"></i>
-    </a>
-
-    {/* GitHub */}
-    <a
-      href="https://github.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="GitHub"
-      className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
-    >
-      <i className="fab fa-github"></i>
-    </a>
-
-    {/* LinkedIn */}
-    <a
-      href="https://linkedin.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="LinkedIn"
-      className="text-gray-700 hover:text-violet-600 transform hover:scale-125 transition-all duration-300"
-    >
-      <i className="fab fa-linkedin-in"></i>
-    </a>
-  </div>
-);
+  const SocialIcons = () => (
+    <div className="flex justify-center gap-5 text-2xl mt-4 text-gray-400">
+      {["google", "github", "linkedin-in", "envelope"].map((icon, i) => (
+        <a
+          key={i}
+          href="#"
+          className="hover:text-violet-500 transform hover:scale-125 transition-all duration-300"
+        >
+          <i className={`fab fa-${icon}`}></i>
+        </a>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4 font-sans">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#151528] to-[#1e1e3f] overflow-hidden font-sans p-4">
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
       />
 
-      <div className="relative w-full max-w-[850px] h-[550px] rounded-[30px] shadow-2xl overflow-hidden">
-        {/* Sliding Blue Panel */}
+      <div className="relative w-full max-w-[850px] h-[550px] rounded-[30px] shadow-2xl overflow-hidden backdrop-blur-lg bg-gray-900/60 border border-gray-700/60">
+        {/* Sliding Gradient Panel */}
         <div
-          className={`absolute top-0 w-1/2 h-full bg-gradient-to-br from-indigo-700 to-violet-700 rounded-[30px] z-20 flex flex-col justify-center items-center text-white p-12 transition-all duration-700 ease-in-out`}
+          className={`absolute top-0 w-1/2 h-full bg-gradient-to-br from-violet-600 via-indigo-600 to-fuchsia-600 rounded-[30px] z-20 flex flex-col justify-center items-center text-white p-12 transition-all duration-700 ease-in-out`}
           style={{ left: active ? "0%" : "50%" }}
         >
           <h1 className="text-3xl font-bold mb-4 text-center animate-fadeIn">
@@ -98,7 +63,7 @@ const SocialIcons = () => (
           </h1>
           <p className="mb-6 text-center text-md font-semibold animate-fadeIn delay-100">
             {active
-              ? "To keep connected with us, please login with your personal info."
+              ? "To keep connected with us, please login with your info."
               : "Enter your personal details and start your journey with us."}
           </p>
           <button
@@ -109,18 +74,18 @@ const SocialIcons = () => (
           </button>
         </div>
 
-        {/* Forms Container */}
+        {/* Forms */}
         <div className="absolute top-0 w-full h-full flex">
-          {/* LOGIN Form */}
+          {/* Login Form */}
           <div
-            className={`w-1/2 h-full bg-white p-12 flex flex-col justify-center items-center transition-all duration-700 ease-in-out z-10 ${
+            className={`w-1/2 h-full bg-gray-950 p-12 flex flex-col justify-center items-center transition-all duration-700 ease-in-out z-10 ${
               active
                 ? "translate-x-full opacity-0 pointer-events-none"
                 : "translate-x-0 opacity-100 pointer-events-auto"
             }`}
           >
             <form onSubmit={handleLogin} className="w-full max-w-xs text-center">
-              <h1 className="text-3xl font-bold mb-8 text-violet-700 animate-slideDown">
+              <h1 className="text-3xl font-bold mb-8 text-violet-400 animate-slideDown">
                 Log In
               </h1>
               <div className="relative mb-6">
@@ -132,7 +97,7 @@ const SocialIcons = () => (
                   onChange={handleInputChange(setLoginData)}
                   className={inputClass}
                 />
-                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+                <User className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
               </div>
               <div className="relative mb-10">
                 <input
@@ -143,7 +108,7 @@ const SocialIcons = () => (
                   onChange={handleInputChange(setLoginData)}
                   className={inputClass}
                 />
-                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
               </div>
               <button type="submit" className={buttonPrimaryClass}>
                 <LogIn className="inline h-5 w-5 mr-2 -mt-1" /> Login
@@ -155,16 +120,16 @@ const SocialIcons = () => (
             </form>
           </div>
 
-          {/* REGISTER Form */}
+          {/* Register Form */}
           <div
-            className={`w-1/2 h-full bg-white p-12 flex flex-col justify-center items-center transition-all duration-700 ease-in-out z-10 ${
+            className={`w-1/2 h-full bg-gray-950 p-12 flex flex-col justify-center items-center transition-all duration-700 ease-in-out z-10 ${
               active
                 ? "translate-x-0 opacity-100 pointer-events-auto"
                 : "-translate-x-full opacity-0 pointer-events-none"
             }`}
           >
             <form onSubmit={handleSignup} className="w-full max-w-xs text-center">
-              <h1 className="text-3xl font-bold mb-8 text-violet-700 animate-slideDown">
+              <h1 className="text-3xl font-bold mb-8 text-violet-400 animate-slideDown">
                 Create Account
               </h1>
               <div className="relative mb-4">
@@ -176,7 +141,7 @@ const SocialIcons = () => (
                   onChange={handleInputChange(setRegisterData)}
                   className={inputClass}
                 />
-                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+                <User className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
               </div>
               <div className="relative mb-4">
                 <input
@@ -187,7 +152,7 @@ const SocialIcons = () => (
                   onChange={handleInputChange(setRegisterData)}
                   className={inputClass}
                 />
-                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
               </div>
               <div className="relative mb-10">
                 <input
@@ -198,7 +163,7 @@ const SocialIcons = () => (
                   onChange={handleInputChange(setRegisterData)}
                   className={inputClass}
                 />
-                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
               </div>
               <button type="submit" className={buttonPrimaryClass}>
                 <UserPlus className="inline h-5 w-5 mr-2 -mt-1" /> Sign Up
@@ -218,13 +183,13 @@ const SocialIcons = () => (
             0% { opacity: 0; transform: translateY(-10px); }
             100% { opacity: 1; transform: translateY(0); }
           }
-          .animate-fadeIn { animation: fadeIn 0.7s ease forwards; }
+          .animate-fadeIn { animation: fadeIn 0.8s ease forwards; }
 
           @keyframes slideDown {
             0% { opacity: 0; transform: translateY(-20px); }
             100% { opacity: 1; transform: translateY(0); }
           }
-          .animate-slideDown { animation: slideDown 0.7s ease forwards; }
+          .animate-slideDown { animation: slideDown 0.8s ease forwards; }
         `}
       </style>
     </div>
