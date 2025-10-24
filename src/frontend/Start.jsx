@@ -12,10 +12,10 @@ const NavLink = ({ text, icon, isPrimary = false }) => {
       <motion.a
         whileHover={{
           scale: 1.05,
-          boxShadow: "0 0 20px rgba(236,72,153,0.6)",
+          boxShadow: "0 0 25px rgba(139,92,246,0.6)",
         }}
         transition={{ type: "spring", stiffness: 200 }}
-        className={`${base} bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md shadow-purple-800/40`}
+        className={`${base} bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-md shadow-indigo-800/40`}
       >
         {icon && <span>{icon}</span>}
         <span>{text}</span>
@@ -27,11 +27,11 @@ const NavLink = ({ text, icon, isPrimary = false }) => {
     <motion.a
       whileHover={{
         scale: 1.05,
-        backgroundColor: "rgba(55,65,85,0.9)",
+        backgroundColor: "rgba(45,55,72,0.9)",
         color: "#fff",
       }}
       transition={{ type: "spring", stiffness: 200 }}
-      className={`${base} text-gray-300 bg-gray-900/50 border border-purple-900 hover:border-purple-600 hover:text-white`}
+      className={`${base} text-gray-300 bg-gray-800/50 border border-gray-700 hover:border-violet-500 hover:text-white`}
     >
       {icon && <span>{icon}</span>}
       <span>{text}</span>
@@ -46,7 +46,6 @@ const Navbar = () => (
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 1.2, ease: "easeInOut" }}
   >
-    {/* Animated Logo */}
     <motion.div
       className="flex items-center space-x-2"
       initial={{ opacity: 0, scale: 0.8 }}
@@ -61,14 +60,14 @@ const Navbar = () => (
       <motion.img
         src={logo}
         alt="Logo"
-        className="w-36 h-36 sm:w-44 sm:h-44 object-contain rounded-full shadow-lg"
+        className="w-28 h-28 sm:w-36 sm:h-36 object-contain rounded-full shadow-lg shadow-indigo-900/50"
         animate={{
-          rotate: [0, 5, -5, 0],
-          scale: [1, 1.04, 1],
+          rotate: [0, 4, -4, 0],
+          scale: [1, 1.05, 1],
         }}
         transition={{
           repeat: Infinity,
-          duration: 10,
+          duration: 8,
           ease: "easeInOut",
         }}
       />
@@ -92,9 +91,7 @@ const App = () => {
   const letterContainer = {
     hidden: {},
     visible: {
-      transition: {
-        staggerChildren: 0.1,
-      },
+      transition: { staggerChildren: 0.1 },
     },
   };
 
@@ -108,10 +105,10 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 overflow-hidden font-sans relative flex flex-col justify-between select-none">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a0a1a] via-[#0f1025] to-[#1a1a3d] overflow-hidden font-sans relative flex flex-col justify-between select-none">
       {/* Animated Background */}
       <motion.div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#350062_0%,_#000000_100%)] z-0"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#2a2a72_0%,_#000_100%)] z-0"
         animate={{
           backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
         }}
@@ -123,27 +120,25 @@ const App = () => {
       ></motion.div>
 
       <div className="relative z-10 flex flex-col justify-between h-full">
-        {/* Navbar */}
         <Navbar />
 
-        {/* Hero Section */}
         <header className="py-20 text-center max-w-4xl mx-auto px-4 flex-grow flex flex-col justify-center overflow-hidden">
           <motion.h1
-            className="relative text-5xl sm:text-6xl md:text-8xl font-extrabold mb-5 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-300 leading-[1.2]"
+            className="text-5xl sm:text-6xl md:text-8xl font-extrabold mb-5 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-indigo-400 to-fuchsia-400 leading-[1.2]"
             variants={letterContainer}
             initial="hidden"
             animate="visible"
             whileHover={{
               scale: 1.03,
               textShadow:
-                "0 0 10px rgba(236,72,153,0.4), 0 0 25px rgba(147,51,234,0.4)",
+                "0 0 20px rgba(139,92,246,0.5), 0 0 40px rgba(79,70,229,0.4)",
             }}
           >
             {title.split("").map((char, i) => (
               <motion.span
                 key={i}
                 variants={letterVariant}
-                className="transition-all duration-700 hover:text-pink-300"
+                className="transition-all duration-700 hover:text-indigo-300"
               >
                 {char}
               </motion.span>
@@ -165,27 +160,25 @@ const App = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 2.1, duration: 1 }}
           >
-            Code visualization that helps you understand complex logic better and faster.
+            Visualize algorithms and code logic beautifully — understand faster and learn deeper.
           </motion.p>
 
           <Link to="/login">
             <motion.button
-              className="relative px-8 sm:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-full text-white shadow-lg shadow-purple-900/50 transition-all duration-700 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 overflow-hidden"
+              className="relative px-8 sm:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-full text-white shadow-lg shadow-violet-900/50 transition-all duration-700 bg-gradient-to-r from-violet-600 via-indigo-600 to-fuchsia-600 overflow-hidden"
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 2.4, duration: 1 }}
               whileHover={{
                 scale: 1.1,
                 background:
-                  "linear-gradient(120deg, #a855f7, #ec4899, #a855f7)",
+                  "linear-gradient(120deg, #8b5cf6, #6366f1, #d946ef)",
                 boxShadow:
-                  "0 0 25px rgba(236,72,153,0.6), 0 0 60px rgba(147,51,234,0.4)",
+                  "0 0 30px rgba(139,92,246,0.6), 0 0 80px rgba(79,70,229,0.5)",
               }}
               whileTap={{ scale: 0.96 }}
             >
               <span className="relative z-10">START Visual Creation</span>
-
-              {/* Light Sweep Effect */}
               <motion.span
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0"
                 whileHover={{
@@ -201,7 +194,6 @@ const App = () => {
           </Link>
         </header>
 
-        {/* Footer */}
         <footer className="w-full py-3 text-center text-xs text-gray-500 mb-2">
           © 2025 Decipher. All rights reserved.
         </footer>

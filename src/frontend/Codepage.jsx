@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { History, Upload, Play } from "lucide-react";
+import PythonVisualizer from "./python"; // ✅ Import here
 
 const Codepage = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -9,30 +10,35 @@ const Codepage = () => {
   const [code, setCode] = useState("// Write your code here...\nconsole.log('Hello, world!');");
   const [output, setOutput] = useState("");
   const [history, setHistory] = useState([]);
+  const [showPythonVisualizer, setShowPythonVisualizer] = useState(false); // ✅ New state
 
-  // Handle file upload
+  // --- Handle file upload ---
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result;
-      setCode(text);
-    };
+    reader.onload = (event) => setCode(event.target?.result);
     reader.readAsText(file);
   };
 
-  // Handle run (simulate execution)
+  // --- Handle run ---
   const handleRun = () => {
+    if (language === "python") {
+      setShowPythonVisualizer(true); // ✅ Show visualizer
+      setOutputOpen(true);
+      return;
+    }
+
+    // Simulated outputs for other languages
+    setShowPythonVisualizer(false);
     if (language === "javascript") {
       setOutput("✅ JavaScript executed successfully!\nOutput: Hello, world!");
-    } else if (language === "python") {
-      setOutput("🐍 Python code simulated.\nOutput: Hello, world!");
     } else if (language === "c" || language === "cpp") {
       setOutput("⚙ C/C++ code simulated.\nOutput: Hello, world!");
     } else {
       setOutput(`Execution for ${language} not yet integrated.`);
     }
+
     setHistory((prev) => [{ code, language }, ...prev]);
     setOutputOpen(true);
   };
@@ -77,7 +83,6 @@ const Codepage = () => {
       <div className="flex flex-col flex-1">
         {/* ==== Top Toolbar ==== */}
         <div className="flex items-center gap-3 p-4 bg-gray-800 border-b border-gray-700 flex-wrap">
-          {/* History Button */}
           <button
             onClick={() => setHistoryOpen((prev) => !prev)}
             className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
@@ -86,7 +91,6 @@ const Codepage = () => {
             <span className="hidden sm:inline">History</span>
           </button>
 
-          {/* Upload Button */}
           <label className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition">
             <Upload className="w-5 h-5" />
             <span className="hidden sm:inline">Upload</span>
@@ -98,7 +102,6 @@ const Codepage = () => {
             />
           </label>
 
-          {/* Language Selector */}
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-300">Language:</label>
             <select
@@ -113,7 +116,6 @@ const Codepage = () => {
             </select>
           </div>
 
-          {/* Run Button */}
           <button
             onClick={handleRun}
             className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition shadow-md"
@@ -123,14 +125,10 @@ const Codepage = () => {
           </button>
         </div>
 
-        {/* ==== Editor & Output Split Area ==== */}
+        {/* ==== Editor & Output Split ==== */}
         <div className="flex flex-1 transition-all duration-500">
           {/* Code Editor */}
-          <div
-            className={`p-4 transition-all duration-500 ${
-              outputOpen ? "w-1/2" : "w-full"
-            }`}
-          >
+          <div className={`p-4 transition-all duration-500 ${outputOpen ? "w-1/2" : "w-full"}`}>
             <textarea
               className="w-full h-full font-mono text-sm bg-gray-900 border border-gray-700 rounded-xl p-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               value={code}
@@ -146,17 +144,21 @@ const Codepage = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 200 }}
                 transition={{ duration: 0.4 }}
-                className="w-1/2 p-4 border-l border-gray-700 bg-gray-850"
+                className="w-1/2 p-4 border-l border-gray-700 bg-gray-850 overflow-y-auto"
               >
                 <h3 className="font-semibold mb-2">Output:</h3>
                 <motion.div
-                  key={output}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-gray-800 rounded-lg p-3 text-sm min-h-[100px] whitespace-pre-line"
                 >
-                  {output || <span className="text-gray-500">No output yet...</span>}
+                  {showPythonVisualizer ? (
+                    <PythonVisualizer key={code} /> // ✅ Renders PythonVisualizer inline
+                  ) : (
+                    <div className="bg-gray-800 rounded-lg p-3 text-sm min-h-[100px] whitespace-pre-line">
+                      {output || <span className="text-gray-500">No output yet...</span>}
+                    </div>
+                  )}
                 </motion.div>
               </motion.div>
             )}
