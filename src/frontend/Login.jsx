@@ -33,15 +33,20 @@ const LoginRegister = () => {
 
   const SocialIcons = () => (
     <div className="flex justify-center gap-5 text-2xl mt-4 text-gray-400">
-      {["google", "github", "linkedin-in", "envelope"].map((icon, i) => (
-        <a
-          key={i}
-          href="#"
-          className="hover:text-violet-500 transform hover:scale-125 transition-all duration-300"
-        >
-          <i className={`fab fa-${icon}`}></i>
-        </a>
-      ))}
+      {["google", "github", "linkedin-in", "gmail"].map((icon, i) => (
+  <a
+    key={i}
+    href="#"
+    className="hover:text-violet-500 transform hover:scale-125 transition-all duration-300"
+  >
+    {icon === "gmail" ? (
+      <i className="fas fa-envelope"></i>  
+    ) : (
+      <i className={`fab fa-${icon}`}></i>
+    )}
+  </a>
+))}
+
     </div>
   );
 
