@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Start from "./frontend/Start";
 import Login from "./frontend/Login";
 import Codepage from "./frontend/Codepage";
-import Python from "./frontend/python"; // Capitalized
+import Python from "./frontend/python";
 import "./index.css";
 
 function App() {
