@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wave Array Visualization</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 20px;
+    }
+    .bar {
+      fill: steelblue;
+    }
+    .highlight {
+      fill: orange;
+    }
+    svg {
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Wave Array Visualization</h2>
+
+<div>
+  <button id="startBtn">Start</button>
+  <button id="pauseBtn">Pause</button>
+  <button id="nextBtn">Next Step</button>
+  <button id="resetBtn">Reset</button>
+</div>
+
+<svg width="600" height="300"></svg>
+
+<script>
+  // Sample step-by-step data from Python's wavearray_steps
+  const data = {
+    "steps": [
+      {"step": 1, "array": [6, 3, 5, 10, 7, 20], "swap": [0,1]},
+      {"step": 2, "array": [6, 3, 10, 5, 7, 20], "swap": [2,3]},
+      {"step": 3, "array": [6, 3, 10, 5, 20, 7], "swap": [4,5]}
+    ],
+    "final_array": [6, 3, 10, 5, 20, 7],
+    "original_array": [6, 3, 5, 10, 7, 20]
+  };
+
+  const svg = d3.select("svg");
+  const width = +svg.attr("width");
+  const height = +svg.attr("height");
+  const barWidth = width / data.final_array.length;
+
+  let stepIndex = 0;
+  let interval = null;
+
+  function render(array, highlight = []) {
+    // Bars
+    const bars = svg.selectAll("rect")
+      .data(array);
+
+    bars.enter()
+      .append("rect")
+      .merge(bars)
+      .transition()
+      .duration(500)
+      .attr("x", (d, i) => i * barWidth + 5)
+      .attr("y", d => height - d * 10)
+      .attr("width", barWidth - 10)
+      .attr("height", d => d * 10)
+      .attr("class", (d,i) => highlight.includes(i) ? "highlight" : "bar");
+
+    bars.exit().remove();
+
+    // Labels
+    const labels = svg.selectAll("text")
+      .data(array);
+
+    labels.enter()
+      .append("text")
+      .merge(labels)
+      .transition()
+      .duration(500)
+      .attr("x", (d,i) => i * barWidth + barWidth / 2)
+      .attr("y", d => height - d * 10 - 5)
+      .attr("text-anchor", "middle")
+      .text(d => d);
+
+    labels.exit().remove();
+  }
+
+  // Initial render
+  render(data.original_array);
+
+  // Start animation
+  document.getElementById("startBtn").addEventListener("click", () => {
+    if(interval) return; // prevent multiple intervals
+    interval = setInterval(() => {
+      if(stepIndex >= data.steps.length){
+        clearInterval(interval);
+        interval = null;
+        return;
+      }
+      const stepData = data.steps[stepIndex];
+      render(stepData.array, stepData.swap);
+      stepIndex++;
+    }, 1000);
+  });
+
+  // Pause animation
+  document.getElementById("pauseBtn").addEventListener("click", () => {
+    if(interval){
+      clearInterval(interval);
+      interval = null;
+    }
+  });
+
+  // Next step manually
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if(stepIndex >= data.steps.length) return;
+    const stepData = data.steps[stepIndex];
+    render(stepData.array, stepData.swap);
+    stepIndex++;
+  });
+
+  // Reset
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    if(interval){
+      clearInterval(interval);
+      interval = null;
+    }
+    stepIndex = 0;
+    render(data.original_array);
+  });
+
+</script>
+
+</body>
+</html>

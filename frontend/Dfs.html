@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFS Visualization Interactive</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f7fb;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    color: #333;
+  }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  button {
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: none;
+    background-color: #4a90e2;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover {
+    background-color: #357ab8;
+  }
+  input[type="range"] {
+    width: 200px;
+  }
+  svg {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    margin: 0 auto;
+    display: block;
+  }
+  .node {
+    stroke: #555;
+    stroke-width: 2px;
+    fill: #ccc;
+  }
+  .visited {
+    fill: #6fcf97;
+  }
+  .current {
+    fill: #f2994a;
+  }
+  .edge {
+    stroke: #bbb;
+    stroke-width: 2px;
+  }
+  .stack-node {
+    fill: #56ccf2;
+    rx: 6;
+    ry: 6;
+  }
+  .stack-label {
+    fill: #fff;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .order {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+  }
+</style>
+</head>
+<body>
+
+<h1>DFS Interactive Visualization</h1>
+
+<div class="controls">
+  <button id="start">Start</button>
+  <button id="prev">Previous Step</button>
+  <button id="next">Next Step</button>
+  <button id="reset">Reset</button>
+  <label>Speed: <input type="range" id="speed" min="200" max="2000" value="1000"></label>
+</div>
+
+<svg width="900" height="400"></svg>
+<div class="order"><strong>Order so far:</strong> <span id="order"></span></div>
+
+<script>
+const graph = {
+  1: [2,3],
+  2: [4],
+  3: [],
+  4: []
+};
+
+const steps = [
+  {"current":1,"stack":[3,2],"visited":[1],"order_so_far":[1]},
+  {"current":2,"stack":[3,4],"visited":[1,2],"order_so_far":[1,2]},
+  {"current":4,"stack":[3],"visited":[1,2,4],"order_so_far":[1,2,4]},
+  {"current":3,"stack":[],"visited":[1,2,3,4],"order_so_far":[1,2,4,3]}
+];
+
+const svg = d3.select("svg");
+const width = +svg.attr("width");
+const height = +svg.attr("height");
+const nodeRadius = 25;
+
+const nodes = Object.keys(graph).map(d => +d);
+const xScale = d3.scalePoint().domain(nodes).range([100, width - 250]);
+const nodePositions = {};
+nodes.forEach((n,i) => { nodePositions[n] = { x: xScale(n), y: height/2 }; });
+
+const edges = [];
+for (let [from, neighbors] of Object.entries(graph)) {
+  neighbors.forEach(to => { edges.push({from: +from, to}); });
+}
+
+svg.append("defs").append("filter")
+  .attr("id", "shadow")
+  .append("feDropShadow")
+  .attr("dx", 2)
+  .attr("dy", 2)
+  .attr("stdDeviation", 2)
+  .attr("flood-color", "#999")
+  .attr("flood-opacity", 0.3);
+
+svg.selectAll(".edge")
+  .data(edges)
+  .enter()
+  .append("line")
+  .attr("class", "edge")
+  .attr("x1", d => nodePositions[d.from].x)
+  .attr("y1", d => nodePositions[d.from].y)
+  .attr("x2", d => nodePositions[d.to].x)
+  .attr("y2", d => nodePositions[d.to].y);
+
+const nodeGroup = svg.selectAll(".nodeGroup")
+  .data(nodes)
+  .enter()
+  .append("g")
+  .attr("class", "nodeGroup")
+  .attr("transform", d => `translate(${nodePositions[d].x},${nodePositions[d].y})`);
+
+nodeGroup.append("circle").attr("r", nodeRadius).attr("class", "node");
+nodeGroup.append("text")
+  .text(d => d)
+  .attr("text-anchor", "middle")
+  .attr("dy", 6)
+  .attr("font-size", "16px")
+  .attr("fill", "#fff")
+  .attr("font-weight", "bold");
+
+const stackX = width - 150;
+const stackYStart = 50;
+const stackSpacing = 50;
+
+function updateStep(step) {
+  svg.selectAll(".node")
+    .transition().duration(300)
+    .attr("class", d => {
+      if (d === step.current) return "node current";
+      else if (step.visited.includes(d)) return "node visited";
+      else return "node";
+    });
+
+  document.getElementById("order").textContent = step.order_so_far.join(", ");
+
+  const stackNodes = svg.selectAll(".stack-node").data(step.stack, d => d);
+  stackNodes.enter()
+    .append("rect")
+    .attr("class", "stack-node")
+    .attr("x", stackX)
+    .attr("width", 50)
+    .attr("height", 40)
+    .merge(stackNodes)
+    .transition().duration(300)
+    .attr("y", (d,i) => stackYStart + i*stackSpacing);
+  stackNodes.exit().remove();
+
+  const stackLabels = svg.selectAll(".stack-label").data(step.stack, d => d);
+  stackLabels.enter()
+    .append("text")
+    .attr("class", "stack-label")
+    .attr("x", stackX + 25)
+    .attr("text-anchor", "middle")
+    .attr("dy", 25)
+    .merge(stackLabels)
+    .transition().duration(300)
+    .attr("y", (d,i) => stackYStart + i*stackSpacing)
+    .text(d => d);
+  stackLabels.exit().remove();
+}
+
+let currentStep = 0;
+let interval = null;
+let speed = 1000;
+
+function startAuto() {
+  if(interval) clearInterval(interval);
+  interval = setInterval(() => {
+    if(currentStep >= steps.length) clearInterval(interval);
+    updateStep(steps[currentStep]);
+    currentStep++;
+  }, speed);
+}
+
+function nextStep() {
+  if(currentStep < steps.length) {
+    updateStep(steps[currentStep]);
+    currentStep++;
+  }
+}
+
+function prevStep() {
+  if(currentStep > 1) {
+    currentStep -= 2;
+    updateStep(steps[currentStep]);
+    currentStep++;
+  }
+}
+
+function reset() {
+  currentStep = 0;
+  updateStep({current:null, stack:[], visited:[], order_so_far:[]});
+  if(interval) clearInterval(interval);
+}
+
+document.getElementById("start").addEventListener("click", startAuto);
+document.getElementById("next").addEventListener("click", nextStep);
+document.getElementById("prev").addEventListener("click", prevStep);
+document.getElementById("reset").addEventListener("click", reset);
+document.getElementById("speed").addEventListener("input", e => { speed = +e.target.value; if(interval) startAuto(); });
+
+reset();
+</script>
+
+</body>
+</html>
