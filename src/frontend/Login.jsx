@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, LogIn, UserPlus, X } from "lucide-react";
 import axios from "axios";
 
-const API = "http://localhost:8001/api/auth";
+const API = `${import.meta.env.VITE_API_BASE_URL}/api/auth`;
 
 const LoginRegister = () => {
   const navigate = useNavigate();
@@ -356,3 +356,4 @@ const handleLogin = async (e) => {
 };
 
 export default LoginRegister;
+

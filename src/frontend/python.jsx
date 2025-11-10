@@ -744,7 +744,7 @@ export default function Python() {
 
     // --- Backend API URL ---
     // --- 3. FIX: Hardcode API URL to avoid import.meta ---
-    const API_BASE_URL = 'http://127.0.0.1:8001';
+   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     // --- Backend Interaction (UPGRADED) ---
      const handleVisualize = async () => {

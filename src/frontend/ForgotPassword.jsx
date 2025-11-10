@@ -3,7 +3,7 @@ import axios from "axios";
 import Modal from "./Modal";
 import { useNavigate } from "react-router-dom"; // ✅ import navigate
 
-const API = "http://localhost:8001/api/auth";
+const API = `${import.meta.env.VITE_API_BASE_URL}/api/auth`;
 
 const ForgotPassword = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);

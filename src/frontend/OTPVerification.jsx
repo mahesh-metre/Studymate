@@ -3,7 +3,7 @@ import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import Modal from "./Modal";
 
-const API = "http://localhost:8001/api/auth";
+const API = `${import.meta.env.VITE_API_BASE_URL}/api/auth`;
 
 const OTPVerification = ({ isOpen, onClose }) => {
   const { state } = useLocation();

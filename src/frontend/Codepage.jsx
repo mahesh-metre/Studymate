@@ -21,7 +21,7 @@ const Codepage = () => {
       }
 
       try {
-        const res = await fetch(`http://localhost:8001/api/codeHistory/${userId}`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/codeHistory/${userId}`);
         const data = await res.json();
         if (data.success) setHistory(data.data);
       } catch (err) {
@@ -46,7 +46,7 @@ const Codepage = () => {
     setHistory((prev) => [newEntry, ...prev]);
 
     try {
-      const res = await fetch("http://localhost:8001/api/codeHistory/save", {
+      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}/api/codeHistory/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, code, language, timestamp }),
@@ -79,7 +79,7 @@ const Codepage = () => {
   const clearHistory = async () => {
     if (window.confirm("Clear all history?")) {
       try {
-        await fetch(`http://localhost:8001/api/codeHistory/${userId}`, {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/codeHistory/${userId}`, {
           method: "DELETE",
         });
         setHistory([]);

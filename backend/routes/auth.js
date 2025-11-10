@@ -25,7 +25,7 @@ const sendOTP = async (email, otp) => {
     from: process.env.EMAIL_USER,
     to: email,
     subject: "Your OTP Verification Code",
-    text: `Thank you for choosing Decipher. Your OTP for Decipher registration is ${otp}. It expires in 1 hour.`,
+    text: `Thank you for choosing Decipher. Your OTP for Decipher registration is ${otp}. It expires in 10 minutes.`,
   });
 };
 

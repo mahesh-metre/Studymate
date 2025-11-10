@@ -5,6 +5,7 @@ import pg from "pg";
 import authRoutes from "./routes/auth.js";
 import codeHistoryRoutes from "./routes/codeHistory.js";
 
+// Load environment variables from .env file
 dotenv.config();
 
 const app = express();
@@ -12,11 +13,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// PostgreSQL connection
+// --- POSTGRESQL CONNECTION (FIXED) ---
+// We now rely 100% on the environment variable, which comes from Render or a local .env
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  console.error("❌ FATAL ERROR: DATABASE_URL is not set in environment variables.");
+  // Exit the process so the server doesn't start with a null database connection
+  process.exit(1); 
+}
+
 export const pool = new pg.Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    "postgresql://postgres:yourpassword@localhost:5432/yourdbname",
+  connectionString: DATABASE_URL,
 });
 
 pool.connect()
@@ -28,7 +36,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/codeHistory", codeHistoryRoutes);
 
 // Dynamic port handling
-const startServer = (port = 8001) => {
+const startServer = (port = process.env.PORT || 8001) => { // Use Render's PORT env var if available
   const server = app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);
   });
@@ -44,3 +52,5 @@ const startServer = (port = 8001) => {
 };
 
 startServer();
+
+
