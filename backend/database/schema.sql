@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    otp VARCHAR(6),
+    is_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE code_history (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  code TEXT NOT NULL,
+  language VARCHAR(50),
+  timestamp VARCHAR(100)
+);
