@@ -36,22 +36,6 @@ app.use(cors({
 
 app.use(express.json());
 
-// --- POSTGRESQL CONNECTION (FIXED) ---
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("❌ FATAL ERROR: DATABASE_URL is not set in environment variables.");
-  // Exit the process so the server doesn't start with a null database connection
-  process.exit(1); 
-}
-
-export const pool = new pg.Pool({
-  connectionString: DATABASE_URL,
-});
-
-pool.connect()
-  .then(() => console.log("✅ Connected to PostgreSQL"))
-  .catch((err) => console.error("❌ PostgreSQL connection error:", err));
 
 // Routes
 app.use("/api/auth", authRoutes);

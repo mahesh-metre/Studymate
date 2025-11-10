@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { pool } from "../server.js";
+import { pool } from "../db.js";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 

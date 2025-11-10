@@ -1,15 +1,21 @@
-import pkg from "pg";
+// In db.js
+import pg from "pg";
 import dotenv from "dotenv";
+
 dotenv.config();
 
-const { Pool } = pkg;
+const DATABASE_URL = process.env.DATABASE_URL;
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+if (!DATABASE_URL) {
+  console.error("❌ FATAL ERROR: DATABASE_URL is not set in environment variables.");
+  process.exit(1); 
+}
+
+// Use a NAMED EXPORT (export const)
+export const pool = new pg.Pool({
+  connectionString: DATABASE_URL,
 });
 
-export default pool;
+pool.connect()
+  .then(() => console.log("✅ Connected to PostgreSQL"))
+  .catch((err) => console.error("❌ PostgreSQL connection error:", err));
