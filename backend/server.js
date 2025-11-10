@@ -13,7 +13,7 @@ const app = express();
 // --- CORS FIX: Allow Vercel Frontend to talk to Render Backend ---
 const allowedOrigins = [
   // Your live Vercel domain where the frontend is hosted
-  "https://decipher-xi.vercel.app", 
+  "https://studymate-ten-ashen.vercel.app/", 
   // Add other subdomains or local testing origin
   "http://localhost:5173" 
 ];
