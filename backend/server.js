@@ -18,6 +18,9 @@ const allowedOrigins = [
   "http://localhost:5173" 
 ];
 
+
+
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -32,6 +35,9 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 204
 }));
+
+// Explicitly handle preflight requests for all routes
+app.options("*", cors());
 // -----------------------------------------------------------------
 
 app.use(express.json());
