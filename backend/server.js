@@ -46,28 +46,21 @@ app.get("/", (req, res) => {
 });
 
 // -------------------- SERVER START --------------------
-const startServer = async (port = process.env.PORT || 8001) => {
+const startServer = async () => {
+  const port = process.env.PORT || 8001;
+
   try {
     // Test DB connection before starting server
     await pool.connect();
     console.log("✅ PostgreSQL connection OK");
 
-    const server = app.listen(port, () => {
+    app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
-    });
-
-    server.on("error", (err) => {
-      if (err.code === "EADDRINUSE") {
-        console.warn(`⚠️ Port ${port} in use, trying ${port + 1}...`);
-        startServer(port + 1);
-      } else {
-        console.error("Server error:", err);
-      }
     });
 
   } catch (err) {
     console.error("❌ Cannot start server, PostgreSQL connection failed:", err);
-    setTimeout(() => startServer(port), 5000); // Retry after 5 seconds
+    setTimeout(startServer, 5000); // Retry after 5 seconds
   }
 };
 
