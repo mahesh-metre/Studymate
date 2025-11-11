@@ -49,7 +49,7 @@ router.post("/register", async (req, res) => {
       [username, email, hashed, otp, false]
     );
 
-    await sendOTP(email, otp, "register");
+    sendOTP(email, otp, "register").catch(e => console.error(e));
 
     console.log(`[REGISTER] User created: ${email}`);
     res.status(201).json({
