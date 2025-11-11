@@ -1,19 +1,54 @@
-import nodemailer from "nodemailer";
+// backend/utils/otp.js
+import { Resend } from "resend";
 import dotenv from "dotenv";
+
 dotenv.config();
 
-export const sendOTP = async (email, otp) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  });
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Your OTP Verification Code",
-    text: `Thank you for choosing Decipher. Your OTP is ${otp}. It will expire in 10 minutes.`,
-  };
+/**
+ * Send an OTP email for verification or password reset
+ * @param {string} email - Recipient email
+ * @param {string} otp - OTP code
+ * @param {"register" | "reset"} type - Type of email ("register" or "reset")
+ */
+export const sendOTP = async (email, otp, type = "register") => {
+  const subject =
+    type === "reset"
+      ? "Reset Your Password - Decipher"
+      : "Your OTP Verification Code - Decipher";
 
-  await transporter.sendMail(mailOptions);
+  const message =
+    type === "reset"
+      ? `
+      <p>We received a request to reset your password for your <b>Decipher</b> account.</p>
+      <p>Your password reset OTP is:</p>
+    `
+      : `
+      <p>Thank you for choosing <b>Decipher</b>!</p>
+      <p>Your verification OTP is:</p>
+    `;
+
+  try {
+    await resend.emails.send({
+      from: "Decipher <onboarding@resend.dev>",
+      to: email,
+      subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 15px;">
+          <h2 style="color: #4f46e5;">Decipher</h2>
+          ${message}
+          <h3 style="color: #4f46e5; letter-spacing: 3px;">${otp}</h3>
+          <p>This OTP will expire in 10 minutes.</p>
+          <br/>
+          <p style="font-size: 12px; color: #888;">If you didn’t request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+
+    console.log(`✅ ${type.toUpperCase()} OTP sent to ${email}`);
+  } catch (error) {
+    console.error("❌ Error sending OTP via Resend:", error);
+    throw new Error("Failed to send OTP email");
+  }
 };
