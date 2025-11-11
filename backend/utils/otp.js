@@ -1,5 +1,6 @@
 // backend/utils/otp.js
-import nodemailer from "nodemailer";
+// import nodemailer from "nodemailer";
+import brevo from "@getbrevo/brevo";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -7,15 +8,8 @@ dotenv.config();
 // OTP expiry time in minutes
 const OTP_EXPIRY_MINUTES = 10;
 
-// Configure Brevo SMTP transporter
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS,
-  },
-});
+const apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
 
 /**
  * Send OTP Email (for register or reset)
@@ -54,18 +48,18 @@ export const sendOTP = async (email, otp, type = "register") => {
       </div>
     `;
 
-  const textContent = `Your OTP for ${type === "reset" ? "password reset" : "account verification"} is: ${otp}. 
-It expires in ${OTP_EXPIRY_MINUTES} minutes.`;
+  const textContent = `Your OTP for ${type === "reset" ? "password reset" : "account verification"} is: ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`;
+
+  const sendSmtpEmail = {
+    sender: { email: process.env.BREVO_USER, name: "Decipher" },
+    to: [{ email }],
+    subject,
+    htmlContent,
+    textContent,
+  };
 
   try {
-    const info = await transporter.sendMail({
-      from: `"Decipher" <${process.env.BREVO_USER}>`,
-      to: email,
-      subject,
-      text: textContent,
-      html: htmlContent,
-    });
-
+    const info = await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`✅ ${type.toUpperCase()} OTP sent to ${email}. Message ID: ${info.messageId}`);
   } catch (error) {
     console.error("❌ Error sending OTP via Brevo:", error.response || error);

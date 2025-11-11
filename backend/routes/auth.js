@@ -49,7 +49,9 @@ router.post("/register", async (req, res) => {
       [username, email, hashed, otp, false]
     );
 
-    sendOTP(email, otp, "register").catch(e => console.error(e));
+    sendOTP(email, otp, "register")
+    // .then(res => )
+    .catch(e => console.error(e));
 
     console.log(`[REGISTER] User created: ${email}`);
     res.status(201).json({
