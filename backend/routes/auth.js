@@ -1,9 +1,10 @@
+// auth.js
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "../db.js";
 import dotenv from "dotenv";
-import { sendOTP } from "../utils/otp.js"; // ✅ use shared OTP utility
+import { sendOTP } from "../utils/otp.js";
 
 dotenv.config();
 const router = express.Router();
@@ -17,28 +18,29 @@ const generateOTP = () =>
 
 // -------------------- REGISTER --------------------
 router.post("/register", async (req, res) => {
-  const { username, email, password } = req.body;
+  const username = req.body.username?.trim();
+  const email = req.body.email?.trim().toLowerCase();
+  const password = req.body.password?.trim();
 
   try {
     if (!username || !email || !password)
-      return res.status(400).json({ error: "All fields are required" });
+      return res.status(400).json({ success: false, error: "All fields are required" });
 
     if (!isStrongPassword(password))
       return res.status(400).json({
+        success: false,
         error:
           "Password must have 8+ chars, uppercase, lowercase, number, and special character.",
       });
 
-    // Check existing user
     const emailExists = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
     if (emailExists.rows.length)
-      return res.status(400).json({ error: "Email already registered" });
+      return res.status(400).json({ success: false, error: "Email already registered" });
 
     const usernameExists = await pool.query("SELECT * FROM users WHERE username=$1", [username]);
     if (usernameExists.rows.length)
-      return res.status(400).json({ error: "Username already taken" });
+      return res.status(400).json({ success: false, error: "Username already taken" });
 
-    // Hash password and create OTP
     const hashed = await bcrypt.hash(password, 10);
     const otp = generateOTP();
 
@@ -47,7 +49,6 @@ router.post("/register", async (req, res) => {
       [username, email, hashed, otp, false]
     );
 
-    // ✅ Send registration OTP
     await sendOTP(email, otp, "register");
 
     console.log(`[REGISTER] User created: ${email}`);
@@ -59,24 +60,25 @@ router.post("/register", async (req, res) => {
     });
   } catch (err) {
     console.error("[REGISTER ERROR]", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
 // -------------------- VERIFY OTP --------------------
 router.post("/verify-otp", async (req, res) => {
-  const { email, otp } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
+  const otp = req.body.otp?.trim();
 
   try {
     if (!email || !otp)
-      return res.status(400).json({ error: "Email and OTP required" });
+      return res.status(400).json({ success: false, error: "Email and OTP required" });
 
     const user = (await pool.query("SELECT * FROM users WHERE email=$1", [email])).rows[0];
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
     if (user.is_verified)
-      return res.status(400).json({ error: "Account already verified" });
-    if (user.otp !== otp)
-      return res.status(400).json({ error: "Invalid OTP" });
+      return res.status(400).json({ success: false, error: "Account already verified" });
+    if (String(user.otp) !== String(otp))
+      return res.status(400).json({ success: false, error: "Invalid OTP" });
 
     await pool.query("UPDATE users SET is_verified=true, otp=NULL WHERE email=$1", [email]);
 
@@ -88,20 +90,18 @@ router.post("/verify-otp", async (req, res) => {
     });
   } catch (err) {
     console.error("[VERIFY OTP ERROR]", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
 // -------------------- LOGIN --------------------
 router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  console.log("🔹 Login attempt:", { username });
+  const username = req.body.username?.trim();
+  const password = req.body.password?.trim();
 
   try {
     if (!username || !password)
-      return res
-        .status(400)
-        .json({ success: false, error: "Username/email and password required" });
+      return res.status(400).json({ success: false, error: "Username/email and password required" });
 
     const result = await pool.query(
       "SELECT * FROM users WHERE username=$1 OR email=$1",
@@ -109,30 +109,20 @@ router.post("/login", async (req, res) => {
     );
 
     const user = result.rows[0];
-    if (!user)
-      return res.status(404).json({ success: false, error: "User not found" });
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
     if (!user.is_verified)
-      return res
-        .status(400)
-        .json({ success: false, error: "Account not verified. Check email OTP." });
+      return res.status(400).json({ success: false, error: "Account not verified. Check email OTP." });
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid)
-      return res.status(400).json({ success: false, error: "Incorrect password" });
+    if (!valid) return res.status(400).json({ success: false, error: "Incorrect password" });
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     res.json({
       success: true,
       message: "Login successful",
       token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-      },
+      user: { id: user.id, username: user.username, email: user.email },
       redirectTo: "/Codepage",
     });
   } catch (err) {
@@ -143,54 +133,52 @@ router.post("/login", async (req, res) => {
 
 // -------------------- FORGOT PASSWORD --------------------
 router.post("/forgot-password", async (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
 
   try {
-    if (!email) return res.status(400).json({ error: "Email required" });
+    if (!email) return res.status(400).json({ success: false, error: "Email required" });
 
     const user = (await pool.query("SELECT * FROM users WHERE email=$1", [email])).rows[0];
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
     const otp = generateOTP();
     await pool.query("UPDATE users SET otp=$1 WHERE email=$2", [otp, email]);
 
-    // ✅ Send reset OTP (different email content)
     await sendOTP(email, otp, "reset");
 
     console.log(`[FORGOT PASSWORD] OTP sent to: ${email}`);
     res.json({ success: true, message: "OTP sent for password reset" });
   } catch (err) {
     console.error("[FORGOT PASSWORD ERROR]", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
 // -------------------- RESET PASSWORD --------------------
 router.post("/reset-password", async (req, res) => {
-  const { email, otp, newPassword } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
+  const otp = req.body.otp?.trim();
+  const newPassword = req.body.newPassword?.trim();
 
   try {
     if (!email || !otp || !newPassword)
-      return res.status(400).json({ error: "All fields required" });
+      return res.status(400).json({ success: false, error: "All fields required" });
 
     const user = (await pool.query("SELECT * FROM users WHERE email=$1", [email])).rows[0];
-    if (!user) return res.status(404).json({ error: "User not found" });
-    if (user.otp !== otp)
-      return res.status(400).json({ error: "Invalid OTP" });
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
+    if (String(user.otp) !== String(otp))
+      return res.status(400).json({ success: false, error: "Invalid OTP" });
     if (!isStrongPassword(newPassword))
-      return res.status(400).json({ error: "Weak password" });
+      return res.status(400).json({ success: false, error: "Weak password" });
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await pool.query("UPDATE users SET password=$1, otp=NULL WHERE email=$2", [
-      hashed,
-      email,
-    ]);
+    await pool.query("UPDATE users SET password=$1, otp=NULL WHERE email=$2", [hashed, email]);
 
     console.log(`[RESET PASSWORD] Password updated: ${email}`);
     res.json({ success: true, message: "Password reset successful!" });
   } catch (err) {
     console.error("[RESET PASSWORD ERROR]", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 

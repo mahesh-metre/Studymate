@@ -1,31 +1,25 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import pg from "pg";
 import authRoutes from "./routes/auth.js";
 import codeHistoryRoutes from "./routes/codeHistory.js";
+import { pool } from "./db.js"; // our updated db.js
 
-// Load environment variables from .env file
 dotenv.config();
 
 const app = express();
 
-// --- CORS FIX: Allow Vercel Frontend to talk to Render Backend ---
+// -------------------- CORS CONFIG --------------------
 const allowedOrigins = [
-  // Your live Vercel domain where the frontend is hosted
-  "https://decipher-delta.vercel.app", 
-  // Add other subdomains or local testing origin
-  "http://localhost:5173" 
+  "https://decipher-delta.vercel.app", // Vercel frontend
+  "http://localhost:5173",             // local frontend testing
 ];
-
-
-
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
+    if (!origin) return callback(null, true); // allow mobile apps, curl
+    if (!allowedOrigins.includes(origin)) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
@@ -36,31 +30,46 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Explicitly handle preflight requests for all routes
+// Explicitly handle preflight requests
 app.options("*", cors());
-// -----------------------------------------------------------------
 
-app.use(express.json());
+// -------------------- MIDDLEWARE --------------------
+app.use(express.json()); // parse JSON
 
-
-// Routes
+// -------------------- ROUTES --------------------
 app.use("/api/auth", authRoutes);
 app.use("/api/codeHistory", codeHistoryRoutes);
 
-// Dynamic port handling
-const startServer = (port = process.env.PORT || 8001) => { // Use Render's PORT env var if available
-  const server = app.listen(port, () => {
-    console.log(`🚀 Server running on port ${port}`);
-  });
+// -------------------- HEALTH CHECK --------------------
+app.get("/", (req, res) => {
+  res.json({ success: true, message: "Backend is running 🚀" });
+});
 
-  server.on("error", (err) => {
-    if (err.code === "EADDRINUSE") {
-      console.warn(`⚠️ Port ${port} in use, trying ${port + 1}...`);
-      startServer(port + 1);
-    } else {
-      console.error("Server error:", err);
-    }
-  });
+// -------------------- SERVER START --------------------
+const startServer = async (port = process.env.PORT || 8001) => {
+  try {
+    // Test DB connection before starting server
+    await pool.connect();
+    console.log("✅ PostgreSQL connection OK");
+
+    const server = app.listen(port, () => {
+      console.log(`🚀 Server running on port ${port}`);
+    });
+
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.warn(`⚠️ Port ${port} in use, trying ${port + 1}...`);
+        startServer(port + 1);
+      } else {
+        console.error("Server error:", err);
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Cannot start server, PostgreSQL connection failed:", err);
+    setTimeout(() => startServer(port), 5000); // Retry after 5 seconds
+  }
 };
 
+// Start the server
 startServer();
