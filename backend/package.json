@@ -4,15 +4,20 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "server": "node server.js",
+    "python": "uvicorn backend.main:app --host 0.0.0.0 --port 8001",
+    "start": "concurrently \"npm run server\" \"npm run python\"",
+    "render-start": "npm install && python3 -m pip install -r requirements.txt && npm run start",
     "dev": "nodemon server.js"
   },
   "dependencies": {
     "@getbrevo/brevo": "^3.0.1",
     "bcryptjs": "^2.4.3",
+    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
+    "http-proxy-middleware": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^7.0.10",
     "pg": "^8.16.3",

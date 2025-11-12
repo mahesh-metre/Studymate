@@ -1,4 +1,5 @@
 // server.js
+import { createProxyMiddleware } from "http-proxy-middleware";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -35,6 +36,14 @@ app.options("*", cors());
 
 // -------------------- MIDDLEWARE --------------------
 app.use(express.json()); // parse JSON
+
+app.use(
+  "/python",
+  createProxyMiddleware({
+    target: "http://localhost:8001",
+    changeOrigin: true,
+  })
+);
 
 // -------------------- ROUTES --------------------
 app.use("/api/auth", authRoutes);
