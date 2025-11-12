@@ -1,19 +1,27 @@
 import os
+import json
 import httpx
-import json # <-- RE-ADDED: Need this for serializing the trace AND parsing the new AI response
-from typing import List # <-- NEW: Import List for type hinting
+from typing import List
 
-# httpx handles JSON encoding/decoding automatically.
-
-# The API key is an empty string. The Canvas environment will securely
-# provide the necessary credentials for this to work.
+# ---------------------------------------------------------------------
+# ✅ CONFIGURATION
+# ---------------------------------------------------------------------
 API_KEY = os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    print("⚠️ Warning: GEMINI_API_KEY not set in environment variables.")
+
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
 
-# This system prompt guides the AI to be a helpful tutor
-SYSTEM_PROMPT = "You are an expert Python tutor. Explain the following line of code to a beginner in one or two simple sentences, in a friendly and encouraging tone. Do not be overly technical."
+# ---------------------------------------------------------------------
+# ✅ PROMPTS
+# ---------------------------------------------------------------------
 
-# --- NEW: System Prompt for the Summary Feature ---
+SYSTEM_PROMPT = (
+    "You are an expert Python tutor. Explain the following line of code to a "
+    "beginner in one or two simple sentences, in a friendly and encouraging tone. "
+    "Do not be overly technical."
+)
+
 SUMMARY_SYSTEM_PROMPT = """
 You are an expert Python tutor. You will be given a user's Python code and the final step of its execution trace.
 Your job is to provide a high-level, concise summary (2-4 sentences) explaining the final outcome of the code.
@@ -24,11 +32,11 @@ Your job is to provide a high-level, concise summary (2-4 sentences) explaining 
 - Be friendly, encouraging, and easy to understand. Do not just repeat the code line by line.
 """
 
-# --- NEW: System Prompt for the Variable Mapper ---
 VARIABLE_MAPPER_SYSTEM_PROMPT = """
 You are a Python code analyzer. You will be given a user's Python code and a list of its variables.
 Based on how the variables are used, map each variable to its most likely data structure type.
-The valid types are: 'graph', 'stack', 'queue','binary_tree','linked_list', 'dictionary', 'set', 'heap' (or 'priority_queue'), or 'other'.
+The valid types are: 'graph', 'stack', 'queue', 'binary_tree', 'linked_list', 'dictionary',
+'set', 'heap' (or 'priority_queue'), or 'other'.
 Respond in JSON format ONLY. Do not include any other text, explanations, or markdown.
 
 Example:
@@ -47,51 +55,69 @@ Your JSON response:
 }
 """
 
-async def get_ai_explanation(code_line: str) -> str:
+# ---------------------------------------------------------------------
+# ✅ Helper for Safe Gemini API Calls
+# ---------------------------------------------------------------------
+async def call_gemini(payload: dict) -> dict:
     """
-    Sends a line of code to the Gemini API and returns a simple explanation.
+    Safely call Gemini API with timeout and error handling.
+    Always returns either a dict with 'candidates' or an {'error': str}.
     """
-    
-    # This is the payload we send to the Gemini API
-    payload = {
-        "contents": [{ "parts": [{ "text": code_line }] }],
-        "systemInstruction": {
-            "parts": [{ "text": SYSTEM_PROMPT }]
-        }
-    }
-    
-    try:
-        # Use httpx for an asynchronous API call
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(
-                API_URL, 
-                json=payload, # This 'json=' is an argument name, not the module
-                headers={"Content-Type": "application/json"}
-            )
-            # Raise an error if the request was unsuccessful
-            response.raise_for_status() 
-            
-            result = response.json() # This '.json()' is a method of the response object
-            
-            # Extract the text from the AI's response
-            text = result.get("candidates")[0].get("content").get("parts")[0].get("text")
-            return text.strip()
-            
-    except httpx.HTTPStatusError as e:
-        print(f"HTTP Error: {e.response.status_code} - {e.response.text}")
-        return f"Error from AI: {e.response.status_code}"
-    except Exception as e:
-        print(f"AI Explainer Error: {e}") # Log the error to the server console
-        return "Error: Could not get explanation at this time."
+    if not API_KEY:
+        return {"error": "GEMINI_API_KEY not configured"}
 
-# --- NEW: Function for getting the overall summary ---
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(20.0)) as client:
+            response = await client.post(
+                API_URL,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            )
+    except httpx.RequestError as e:
+        print(f"🌐 Network error while calling Gemini: {e}")
+        return {"error": "Network error while contacting Gemini"}
+
+    if response.status_code != 200:
+        # Log full details for debugging
+        print(f"❌ Gemini API Error {response.status_code}: {response.text}")
+        try:
+            data = response.json()
+            message = data.get("error", {}).get("message", "Unknown error")
+        except Exception:
+            message = response.text
+        return {"error": f"Gemini returned {response.status_code}: {message}"}
+
+    try:
+        return response.json()
+    except Exception as e:
+        print(f"⚠️ JSON parsing error from Gemini: {e}")
+        return {"error": "Invalid JSON from Gemini"}
+
+# ---------------------------------------------------------------------
+# ✅ 1. Explain Single Line
+# ---------------------------------------------------------------------
+async def get_ai_explanation(code_line: str) -> str:
+    payload = {
+        "contents": [{"parts": [{"text": code_line}]}],
+        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+    }
+
+    result = await call_gemini(payload)
+
+    if "error" in result:
+        return result["error"]
+
+    try:
+        text = result["candidates"][0]["content"]["parts"][0]["text"]
+        return text.strip()
+    except Exception as e:
+        print(f"⚠️ Parsing AI explanation failed: {e}")
+        return "Error: Could not parse explanation."
+
+# ---------------------------------------------------------------------
+# ✅ 2. Generate Code Summary
+# ---------------------------------------------------------------------
 async def get_ai_summary(code: str, final_step: dict) -> str:
-    """
-    Sends the full code and the final execution step to the Gemini API
-    and returns a high-level summary.
-    """
-    
-    # Create a clean prompt for the AI
     user_prompt = f"""
 Here is my Python code:
 ---
@@ -105,42 +131,30 @@ Here is the final step of the execution trace, which shows the final variables, 
 
 Please provide a summary of what this code did, based on its final state.
 """
-    
+
     payload = {
-        "contents": [{ "parts": [{ "text": user_prompt }] }],
-        "systemInstruction": {
-            "parts": [{ "text": SUMMARY_SYSTEM_PROMPT }]
-        }
+        "contents": [{"parts": [{"text": user_prompt}]}],
+        "systemInstruction": {"parts": [{"text": SUMMARY_SYSTEM_PROMPT}]},
     }
-    
+
+    result = await call_gemini(payload)
+
+    if "error" in result:
+        return result["error"]
+
     try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.post(
-                API_URL, 
-                json=payload, 
-                headers={"Content-Type": "application/json"}
-            )
-            response.raise_for_status()
-            result = response.json()
-            text = result.get("candidates")[0].get("content").get("parts")[0].get("text")
-            return text.strip()
-            
-    except httpx.HTTPStatusError as e:
-        print(f"HTTP Error (Summary): {e.response.status_code} - {e.response.text}")
-        return f"Error from AI: {e.response.status_code}"
+        text = result["candidates"][0]["content"]["parts"][0]["text"]
+        return text.strip()
     except Exception as e:
-        print(f"AI Summary Error: {e}")
-        return "Error: Could not get summary at this time."
+        print(f"⚠️ Parsing AI summary failed: {e}")
+        return "Error: Could not parse summary."
 
-
-# --- NEW: Function for the Variable Mapper ---
+# ---------------------------------------------------------------------
+# ✅ 3. Variable Mapper
+# ---------------------------------------------------------------------
 async def get_ai_variable_map(code: str, var_names: List[str]) -> dict:
-    """
-    Sends the code and variable names to the AI to get a type map.
-    """
-    
     if not var_names:
-        return {} # No variables to map
+        return {}
 
     user_prompt = f"""
 Code:
@@ -151,35 +165,22 @@ Variables: {var_names}
 
 Your JSON response:
 """
-    
+
     payload = {
-        "contents": [{ "parts": [{ "text": user_prompt }] }],
-        "systemInstruction": {
-            "parts": [{ "text": VARIABLE_MAPPER_SYSTEM_PROMPT }]
-        },
-        # --- NEW: Force JSON output ---
-        "generationConfig": {
-            "responseMimeType": "application/json"
-        }
+        "contents": [{"parts": [{"text": user_prompt}]}],
+        "systemInstruction": {"parts": [{"text": VARIABLE_MAPPER_SYSTEM_PROMPT}]},
+        "generationConfig": {"responseMimeType": "application/json"},
     }
-    
+
+    result = await call_gemini(payload)
+
+    if "error" in result:
+        print(f"⚠️ Gemini Variable Map Error: {result['error']}")
+        return {}
+
     try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.post(
-                API_URL, 
-                json=payload, 
-                headers={"Content-Type": "application/json"}
-            )
-            response.raise_for_status()
-            result = response.json()
-            
-            # The AI's response text *is* the JSON
-            text = result.get("candidates")[0].get("content").get("parts")[0].get("text")
-            
-            # Parse the JSON string into a Python dict
-            return json.loads(text)
-            
+        text = result["candidates"][0]["content"]["parts"][0]["text"]
+        return json.loads(text)
     except Exception as e:
-        print(f"AI Variable Map Error: {e}")
-        # On failure, return an empty map so the frontend doesn't break
+        print(f"⚠️ Parsing variable map failed: {e}")
         return {}
