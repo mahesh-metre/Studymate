@@ -137,7 +137,8 @@ async def test_gemini():
 
     start = time.time()
     try:
-        timeout = httpx.Timeout(connect=5.0, read=5.0)
+        # ✅ All four timeout parameters defined
+        timeout = httpx.Timeout(connect=5.0, read=5.0, write=5.0, pool=5.0)
         async with httpx.AsyncClient(timeout=timeout) as client:
             r = await client.get("https://generativelanguage.googleapis.com")
             return {
