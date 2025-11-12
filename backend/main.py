@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from algorithms.wavearray import wavearray_steps
 from algorithms.bfs import bfs_steps
 from algorithms.dfs import dfs_steps
-from tracer import trace_python_code
+from tracer import safe_trace_python_code
 from ai_explainer import get_ai_explanation, get_ai_summary, get_ai_variable_map
 
 # --- Project setup ---
@@ -73,18 +73,31 @@ def dfs_py(req: GraphRequest) -> Dict[str, Any]:
 # ---------------------------------------------------------------------
 @app.post("/visualize")
 async def visualize_py(req: CodeExecutionRequest) -> Dict[str, Any]:
+    """
+    Executes Python code and traces its logic.
+    Then uses Gemini AI to generate a variable map.
+    """
     print("🔹 visualize_py() called")
-    print("🔹 Running trace_python_code()")
-    
-    result = None
-    try:
-        result = trace_python_code(req.code, req.inputs)
-        print("✅ trace_python_code returned successfully")
-    except Exception as e:
-        print(f"⚠️ trace_python_code raised: {e}")
-        return {"error": f"Trace failed: {e}"}
 
-    return {"status": "ok", "result": result}
+    trace_data = safe_trace_python_code(req.code, req.inputs, timeout_seconds=5)
+    print("🔹 Trace completed")
+
+    variable_map = {}
+    try:
+        if trace_data.get("steps"):
+            final_vars = trace_data["steps"][-1].get("variables", {})
+            var_names = list(final_vars.keys())
+
+            if var_names:
+                print("🔹 Calling Gemini to analyze variables...")
+                variable_map = await get_ai_variable_map(req.code, var_names)
+                print("✅ Variable mapping done")
+
+    except Exception as e:
+        print(f"⚠️ Error during variable mapping: {e}")
+
+    trace_data["variable_map"] = variable_map
+    return trace_data
 
 
 @app.post("/explain")
