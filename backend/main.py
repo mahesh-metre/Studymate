@@ -5,28 +5,31 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
-# --- Import AI and tracing functions ---
+# --- Import algorithm and AI helpers ---
 from algorithms.wavearray import wavearray_steps
 from algorithms.bfs import bfs_steps
 from algorithms.dfs import dfs_steps
 from tracer import trace_python_code
-# --- Import the AI helper functions ---
 from ai_explainer import get_ai_explanation, get_ai_summary, get_ai_variable_map
 
+# --- Project setup ---
 PROJECT_ROOT = Path(__file__).resolve().parent
 CPP_DIR = PROJECT_ROOT / "cpp"
 
 app = FastAPI(title="Algorithms API", version="1.0.0")
 
+# --- CORS middleware ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allow all origins for demo; tighten for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Request Models ---
+# ---------------------------------------------------------------------
+# ✅ Request Models
+# ---------------------------------------------------------------------
 class WaveArrayRequest(BaseModel):
     numbers: List[int]
 
@@ -36,92 +39,90 @@ class GraphRequest(BaseModel):
 
 class CodeExecutionRequest(BaseModel):
     code: str
-    inputs: List[str] = [] # For handling user input
+    inputs: List[str] = []  # Handles user input if provided
 
-class ExplainCodeRequest(BaseModel): 
+class ExplainCodeRequest(BaseModel):
     code_line: str
 
-# --- NEW: Request Model for Summary ---
 class SummarizeCodeRequest(BaseModel):
     code: str
-    trace: List[Dict[str, Any]] # Send the whole trace
+    trace: List[Dict[str, Any]]
 
-# --- Endpoints ---
+# ---------------------------------------------------------------------
+# ✅ Algorithm Endpoints
+# ---------------------------------------------------------------------
 @app.post("/wavearray")
 def wavearray_py(req: WaveArrayRequest) -> Dict[str, Any]:
-    """
-    Runs the wave array algorithm (pre-defined).
-    """
+    """Runs the wave array algorithm."""
     return wavearray_steps(req.numbers)
 
 @app.post("/bfs")
 def bfs_py(req: GraphRequest) -> Dict[str, Any]:
-    """
-    Runs the BFS algorithm (pre-defined).
-    """
+    """Runs the BFS algorithm."""
     graph_int_keys = {int(k): v for k, v in req.graph.items()}
     return bfs_steps(graph_int_keys, req.start)
 
 @app.post("/dfs")
 def dfs_py(req: GraphRequest) -> Dict[str, Any]:
-    """
-    Runs the DFS algorithm (pre-defined).
-    """
+    """Runs the DFS algorithm."""
     graph_int_keys = {int(k): v for k, v in req.graph.items()}
     return dfs_steps(graph_int_keys, req.start)
 
-# --- 2. Make the /visualize endpoint 'async def' ---
+# ---------------------------------------------------------------------
+# ✅ AI-Powered Endpoints
+# ---------------------------------------------------------------------
 @app.post("/visualize")
 async def visualize_py(req: CodeExecutionRequest) -> Dict[str, Any]:
-    print("🔹 visualize_py() called with:", req.code[:80], "...")
+    """
+    Executes Python code and traces its logic.
+    Then uses Gemini AI to generate a variable map.
+    """
+    print("🔹 visualize_py() called")
+
     trace_data = trace_python_code(req.code, req.inputs)
-    print("🔹 trace_python_code finished")
-    
+    print("🔹 Trace completed")
+
     variable_map = {}
     try:
         if trace_data.get("steps"):
-            print("🔹 extracting variables")
-            final_step_vars = trace_data["steps"][-1].get("variables", {})
-            var_names = list(final_step_vars.keys())
+            final_vars = trace_data["steps"][-1].get("variables", {})
+            var_names = list(final_vars.keys())
 
             if var_names:
-                print("🔹 calling get_ai_variable_map")
+                print("🔹 Calling Gemini to analyze variables...")
                 variable_map = await get_ai_variable_map(req.code, var_names)
-                print("🔹 got variable map")
+                print("✅ Variable mapping done")
 
     except Exception as e:
         print(f"⚠️ Error during variable mapping: {e}")
 
     trace_data["variable_map"] = variable_map
-    print("✅ returning trace data")
-    return trace_data
-    
     return trace_data
 
-@app.post("/explain") 
-async def explain_py(req: ExplainCodeRequest) -> Dict[str, str]: 
-    """
-    Accepts a line of Python code and returns an AI-generated explanation.
-    """
+
+@app.post("/explain")
+async def explain_py(req: ExplainCodeRequest) -> Dict[str, str]:
+    """Returns a Gemini-generated explanation of a single line of Python code."""
     explanation = await get_ai_explanation(req.code_line)
     return {"explanation": explanation}
 
-# --- NEW: Endpoint for Summary ---
+
 @app.post("/summarize")
 async def summarize_py(req: SummarizeCodeRequest) -> Dict[str, str]:
-    """
-    Accepts the full code and trace, and returns an AI-generated summary.
-    """
+    """Generates a summary of the given code and its final execution trace."""
     if not req.trace:
         return {"summary": "Execution trace is empty, cannot generate summary."}
-        
-    # Send only the final step to the AI to save tokens
+
     final_step = req.trace[-1]
     summary = await get_ai_summary(req.code, final_step)
     return {"summary": summary}
 
+# ---------------------------------------------------------------------
+# ✅ Diagnostic / Utility Routes
+# ---------------------------------------------------------------------
 @app.get("/check-network")
 async def check_network():
+    """Check if the backend can reach the internet."""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             r = await client.get("https://www.google.com")
@@ -129,10 +130,7 @@ async def check_network():
     except Exception as e:
         return {"error": str(e)}
 
-
 @app.get("/")
 def root() -> dict:
-    """
-    Root endpoint for health check.
-    """
+    """Health check endpoint."""
     return {"status": "ok"}
