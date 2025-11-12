@@ -46,14 +46,14 @@ class SummarizeCodeRequest(BaseModel):
     trace: List[Dict[str, Any]] # Send the whole trace
 
 # --- Endpoints ---
-@app.post("/python/wavearray")
+@app.post("/wavearray")
 def wavearray_py(req: WaveArrayRequest) -> Dict[str, Any]:
     """
     Runs the wave array algorithm (pre-defined).
     """
     return wavearray_steps(req.numbers)
 
-@app.post("/python/bfs")
+@app.post("/bfs")
 def bfs_py(req: GraphRequest) -> Dict[str, Any]:
     """
     Runs the BFS algorithm (pre-defined).
@@ -61,7 +61,7 @@ def bfs_py(req: GraphRequest) -> Dict[str, Any]:
     graph_int_keys = {int(k): v for k, v in req.graph.items()}
     return bfs_steps(graph_int_keys, req.start)
 
-@app.post("/python/dfs")
+@app.post("/dfs")
 def dfs_py(req: GraphRequest) -> Dict[str, Any]:
     """
     Runs the DFS algorithm (pre-defined).
@@ -70,7 +70,7 @@ def dfs_py(req: GraphRequest) -> Dict[str, Any]:
     return dfs_steps(graph_int_keys, req.start)
 
 # --- 2. Make the /visualize endpoint 'async def' ---
-@app.post("/python/visualize")
+@app.post("/visualize")
 async def visualize_py(req: CodeExecutionRequest) -> Dict[str, Any]:
     """
     Traces arbitrary Python code with user inputs.
@@ -99,7 +99,7 @@ async def visualize_py(req: CodeExecutionRequest) -> Dict[str, Any]:
     
     return trace_data
 
-@app.post("/python/explain") 
+@app.post("/explain") 
 async def explain_py(req: ExplainCodeRequest) -> Dict[str, str]: 
     """
     Accepts a line of Python code and returns an AI-generated explanation.
@@ -108,7 +108,7 @@ async def explain_py(req: ExplainCodeRequest) -> Dict[str, str]:
     return {"explanation": explanation}
 
 # --- NEW: Endpoint for Summary ---
-@app.post("/python/summarize")
+@app.post("/summarize")
 async def summarize_py(req: SummarizeCodeRequest) -> Dict[str, str]:
     """
     Accepts the full code and trace, and returns an AI-generated summary.

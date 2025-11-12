@@ -42,7 +42,6 @@ app.use(
   createProxyMiddleware({
     target: "http://localhost:8001",
     changeOrigin: true,
-    pathRewrite: (path, req) => path,
   })
 );
 
