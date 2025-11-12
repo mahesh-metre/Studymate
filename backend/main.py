@@ -5,16 +5,15 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 # --- Import AI and tracing functions ---
-from backend.algorithms.wavearray import wavearray_steps
-from backend.algorithms.bfs import bfs_steps
-from backend.algorithms.dfs import dfs_steps
-from backend.tracer import trace_python_code
-# --- 1. Import the new variable mapper function ---
-from backend.ai_explainer import get_ai_explanation, get_ai_summary, get_ai_variable_map
+from algorithms.wavearray import wavearray_steps
+from algorithms.bfs import bfs_steps
+from algorithms.dfs import dfs_steps
+from tracer import trace_python_code
+# --- Import the AI helper functions ---
+from ai_explainer import get_ai_explanation, get_ai_summary, get_ai_variable_map
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-BACKEND_DIR = PROJECT_ROOT / "backend"
-CPP_DIR = BACKEND_DIR / "cpp"
+PROJECT_ROOT = Path(__file__).resolve().parent
+CPP_DIR = PROJECT_ROOT / "cpp"
 
 app = FastAPI(title="Algorithms API", version="1.0.0")
 
