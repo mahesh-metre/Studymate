@@ -130,6 +130,26 @@ async def check_network():
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/test-gemini")
+async def test_gemini():
+    import time
+    import httpx
+
+    start = time.time()
+    try:
+        timeout = httpx.Timeout(connect=5.0, read=5.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            r = await client.get("https://generativelanguage.googleapis.com")
+            return {
+                "status": r.status_code,
+                "elapsed": round(time.time() - start, 2)
+            }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "elapsed": round(time.time() - start, 2)
+        }
+
 @app.get("/")
 def root() -> dict:
     """Health check endpoint."""
