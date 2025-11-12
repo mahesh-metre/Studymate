@@ -40,7 +40,7 @@ app.use(express.json()); // parse JSON
 app.use(
   "/python",
   createProxyMiddleware({
-    target: "http://localhost:8001",
+    target: "http://localhost:5000",
     changeOrigin: true,
   })
 );
