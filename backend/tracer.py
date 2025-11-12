@@ -135,7 +135,7 @@ def trace_python_code(code_string: str, inputs: List[str] = []):
     original_trace = sys.gettrace()
     original_stdout = sys.stdout 
     sys.stdout = output_capture
-    sys.settrace(tracer)
+    sys.settrace(None)
     
     try:
         exec(code_string, execution_globals) # Pass globals
