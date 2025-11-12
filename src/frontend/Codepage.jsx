@@ -46,7 +46,7 @@ const Codepage = () => {
     setHistory((prev) => [newEntry, ...prev]);
 
     try {
-      const res = await fetch("${import.meta.env.VITE_API_BASE_URL}/api/codeHistory/save", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/codeHistory/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, code, language, timestamp }),
