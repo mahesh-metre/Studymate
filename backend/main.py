@@ -1,3 +1,4 @@
+import httpx
 from pathlib import Path
 from typing import List, Dict, Any
 from fastapi import FastAPI
@@ -72,30 +73,28 @@ def dfs_py(req: GraphRequest) -> Dict[str, Any]:
 # --- 2. Make the /visualize endpoint 'async def' ---
 @app.post("/visualize")
 async def visualize_py(req: CodeExecutionRequest) -> Dict[str, Any]:
-    """
-    Traces arbitrary Python code with user inputs.
-    Now also calls the AI to create a variable map.
-    """
-    # 1. Run the tracer (this is synchronous)
+    print("🔹 visualize_py() called with:", req.code[:80], "...")
     trace_data = trace_python_code(req.code, req.inputs)
+    print("🔹 trace_python_code finished")
     
     variable_map = {}
     try:
-        # 2. Get the final variables from the trace
         if trace_data.get("steps"):
+            print("🔹 extracting variables")
             final_step_vars = trace_data["steps"][-1].get("variables", {})
             var_names = list(final_step_vars.keys())
-            
-            # 3. Call the new async AI function
+
             if var_names:
+                print("🔹 calling get_ai_variable_map")
                 variable_map = await get_ai_variable_map(req.code, var_names)
-                
+                print("🔹 got variable map")
+
     except Exception as e:
-        print(f"Error during variable mapping: {e}")
-        # Continue anyway, just with an empty map
-    
-    # 4. Add the map to the response
+        print(f"⚠️ Error during variable mapping: {e}")
+
     trace_data["variable_map"] = variable_map
+    print("✅ returning trace data")
+    return trace_data
     
     return trace_data
 
@@ -120,6 +119,15 @@ async def summarize_py(req: SummarizeCodeRequest) -> Dict[str, str]:
     final_step = req.trace[-1]
     summary = await get_ai_summary(req.code, final_step)
     return {"summary": summary}
+
+@app.get("/check-network")
+async def check_network():
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get("https://www.google.com")
+            return {"status": r.status_code}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.get("/")
