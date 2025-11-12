@@ -150,6 +150,16 @@ async def test_gemini():
             "error": str(e),
             "elapsed": round(time.time() - start, 2)
         }
+    
+@app.get("/test-multiprocessing")
+def test_mp():
+    import multiprocessing, time
+    def worker(q): q.put("ok")
+    q = multiprocessing.Queue()
+    p = multiprocessing.Process(target=worker, args=(q,))
+    p.start()
+    p.join(3)
+    return {"alive": p.is_alive()}
 
 @app.get("/")
 def root() -> dict:
