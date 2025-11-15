@@ -10,6 +10,11 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
     print("⚠️ Warning: GEMINI_API_KEY not set in environment variables.")
 
+AI_CONNECT_TIMEOUT = float(os.getenv("AI_CONNECT_TIMEOUT", "10"))
+AI_READ_TIMEOUT    = float(os.getenv("AI_READ_TIMEOUT", "60"))
+AI_WRITE_TIMEOUT   = float(os.getenv("AI_WRITE_TIMEOUT", "10"))
+AI_POOL_TIMEOUT    = float(os.getenv("AI_POOL_TIMEOUT", "10"))
+
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
 
 # ---------------------------------------------------------------------
@@ -67,7 +72,12 @@ async def call_gemini(payload: dict) -> dict:
         return {"error": "GEMINI_API_KEY not configured"}
 
     # Explicitly set connect/read/write/pool timeouts
-    timeout = httpx.Timeout(connect=5.0, read=20.0, write=5.0, pool=5.0)
+    timeout = httpx.Timeout(
+        connect=AI_CONNECT_TIMEOUT,
+        read=AI_READ_TIMEOUT,
+        write=AI_WRITE_TIMEOUT,
+        pool=AI_POOL_TIMEOUT
+    )
 
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:

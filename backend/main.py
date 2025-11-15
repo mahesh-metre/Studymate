@@ -8,6 +8,7 @@ except RuntimeError:
     # already set; ignore
     pass
 
+import os
 import httpx
 from pathlib import Path
 from typing import List, Dict, Any
@@ -28,6 +29,7 @@ from ai_explainer import get_ai_explanation, get_ai_summary, get_ai_variable_map
 # --- Project setup ---
 PROJECT_ROOT = Path(__file__).resolve().parent
 CPP_DIR = PROJECT_ROOT / "cpp"
+TRACE_TIMEOUT = int(os.getenv("TRACE_TIMEOUT", "15"))
 
 app = FastAPI(title="Algorithms API", version="1.0.0")
 
@@ -107,7 +109,7 @@ async def visualize_py(req: CodeExecutionRequest) -> Dict[str, Any]:
     try:
         # run safe_trace_python_code (which itself uses multiprocessing) in a threadpool
         trace_data = await run_in_threadpool(
-            safe_trace_python_code, req.code, req.inputs, 5
+            safe_trace_python_code, req.code, req.inputs, TRACE_TIMEOUT
         )
     finally:
         trace_semaphore.release()
