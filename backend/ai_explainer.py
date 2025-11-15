@@ -66,8 +66,11 @@ async def call_gemini(payload: dict) -> dict:
     if not API_KEY:
         return {"error": "GEMINI_API_KEY not configured"}
 
+    # Explicitly set connect/read/write/pool timeouts
+    timeout = httpx.Timeout(connect=5.0, read=20.0, write=5.0, pool=5.0)
+
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(20.0)) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 API_URL,
                 json=payload,
@@ -77,14 +80,19 @@ async def call_gemini(payload: dict) -> dict:
         print(f"🌐 Network error while calling Gemini: {e}")
         return {"error": "Network error while contacting Gemini"}
 
+    # Handle non-200 responses gracefully
     if response.status_code != 200:
         # Log full details for debugging
-        print(f"❌ Gemini API Error {response.status_code}: {response.text}")
+        try:
+            text = response.text
+        except Exception:
+            text = "<could not read response.text>"
+        print(f"❌ Gemini API Error {response.status_code}: {text}")
         try:
             data = response.json()
             message = data.get("error", {}).get("message", "Unknown error")
         except Exception:
-            message = response.text
+            message = text
         return {"error": f"Gemini returned {response.status_code}: {message}"}
 
     try:
@@ -180,7 +188,8 @@ Your JSON response:
 
     try:
         text = result["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text)
+        # Some responses may include leading/trailing whitespace — strip before JSON load
+        return json.loads(text.strip())
     except Exception as e:
         print(f"⚠️ Parsing variable map failed: {e}")
         return {}

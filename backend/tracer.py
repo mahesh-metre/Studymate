@@ -77,7 +77,10 @@ def trace_python_code(code_string: str, inputs: List[str] = []):
                     and name not in INTERNAL_VARS_TO_HIDE
                     and not isinstance(value, (types.ModuleType, types.FunctionType, type))
                 ):
-                    variables[name] = make_serializable(value, seen=set())
+                    try:
+                        variables[name] = make_serializable(value, seen=set())
+                    except Exception:
+                        variables[name] = "repr(Unsupported)"
             current_output = output_capture.getvalue()
             trace.append({
                 "line": frame.f_lineno,
@@ -88,19 +91,20 @@ def trace_python_code(code_string: str, inputs: List[str] = []):
         return tracer
 
     sys.settrace(tracer)
+    original_stdout = sys.stdout
     sys.stdout = output_capture
 
     try:
         exec(code_string, {"__builtins__": __builtins__, "input": mock_input_function})
     except Exception as e:
         sys.settrace(None)
-        sys.stdout = sys.__stdout__
+        sys.stdout = original_stdout
         err_line = trace[-1]["line"] if trace else "start"
         final_out = output_capture.getvalue()
         return {"steps": trace, "error": f"Error near line {err_line}: {type(e).__name__}: {e}", "final_output": final_out}
     finally:
         sys.settrace(None)
-        sys.stdout = sys.__stdout__
+        sys.stdout = original_stdout
 
     final_out = output_capture.getvalue()
     trace.append({"line": None, "event": "finished", "variables": {}, "output": final_out})
@@ -121,20 +125,40 @@ def _trace_worker(code, inputs, result_queue):
 
 def safe_trace_python_code(code: str, inputs: List[str] = [], timeout_seconds: int = 5):
     """Run tracing safely in a subprocess to prevent Uvicorn hang."""
+
+    # Use a multiprocessing.Queue for inter-process communication
     result_queue = multiprocessing.Queue()
     proc = multiprocessing.Process(target=_trace_worker, args=(code, inputs, result_queue))
+    proc.daemon = True
     proc.start()
     proc.join(timeout_seconds)
 
     if proc.is_alive():
-        proc.terminate()
+        try:
+            proc.terminate()
+        except Exception:
+            pass
         return {
             "steps": [],
             "error": f"Execution timed out after {timeout_seconds}s",
             "final_output": ""
         }
 
+    # Try to get result with a small timeout to avoid indefinite blocking
     try:
-        return result_queue.get_nowait()
+        result = result_queue.get(timeout=1)
     except Exception:
+        # Nothing received — return a clear error to caller
         return {"steps": [], "error": "No output from subprocess", "final_output": ""}
+
+    # Safety: ensure result shape, and truncate huge traces
+    try:
+        steps = result.get("steps", [])
+        if isinstance(steps, list) and len(steps) > 5000:
+            # defensive truncate (should be handled by main as well)
+            result["steps"] = steps[:2000]
+            result["truncated"] = True
+    except Exception:
+        pass
+
+    return result

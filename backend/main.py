@@ -1,11 +1,24 @@
+import multiprocessing
+
+# IMPORTANT: set start method BEFORE importing modules that may spawn processes
+# This avoids fork-related issues on platforms and hosting providers (Render/Gunicorn).
+try:
+    multiprocessing.set_start_method("spawn", force=True)
+except RuntimeError:
+    # already set; ignore
+    pass
+
 import httpx
 from pathlib import Path
 from typing import List, Dict, Any
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
+import asyncio
+import time
 
-# --- Import algorithm and AI helpers ---
+# --- Import algorithm and AI helpers (these import tracer which uses multiprocessing) ---
 from algorithms.wavearray import wavearray_steps
 from algorithms.bfs import bfs_steps
 from algorithms.dfs import dfs_steps
@@ -49,6 +62,13 @@ class SummarizeCodeRequest(BaseModel):
     trace: List[Dict[str, Any]]
 
 # ---------------------------------------------------------------------
+# Global concurrency control for expensive tracing
+# ---------------------------------------------------------------------
+# Limit simultaneous trace executions to avoid OOM on Render or too many processes.
+TRACE_CONCURRENCY_LIMIT = 2
+trace_semaphore = asyncio.Semaphore(TRACE_CONCURRENCY_LIMIT)
+
+# ---------------------------------------------------------------------
 # ✅ Algorithm Endpoints
 # ---------------------------------------------------------------------
 @app.post("/wavearray")
@@ -74,25 +94,49 @@ def dfs_py(req: GraphRequest) -> Dict[str, Any]:
 @app.post("/visualize")
 async def visualize_py(req: CodeExecutionRequest) -> Dict[str, Any]:
     """
-    Executes Python code and traces its logic.
-    Then uses Gemini AI to generate a variable map.
+    Executes Python code and traces its logic in a safe subprocess.
+    Runs the blocking tracer in a threadpool so the event loop remains responsive.
     """
-    print("🔹 visualize_py() called")
+    print("🔹 /visualize called")
+    print("📌 code length:", len(req.code))
+    print("📌 inputs:", req.inputs)
 
-    trace_data = safe_trace_python_code(req.code, req.inputs, timeout_seconds=5)
-    print("🔹 Trace completed")
+    # concurrency control
+    start_time = time.time()
+    await trace_semaphore.acquire()
+    try:
+        # run safe_trace_python_code (which itself uses multiprocessing) in a threadpool
+        trace_data = await run_in_threadpool(
+            safe_trace_python_code, req.code, req.inputs, 5
+        )
+    finally:
+        trace_semaphore.release()
+    elapsed = round(time.time() - start_time, 2)
+    print(f"🔹 Trace completed in {elapsed}s")
+
+    # post-process and limit trace size (prevent huge payloads)
+    try:
+        steps = trace_data.get("steps", [])
+        MAX_STEPS = 2000  # tune as needed
+        if isinstance(steps, list) and len(steps) > MAX_STEPS:
+            print(f"⚠️ Trace too large ({len(steps)} steps). Truncating to {MAX_STEPS}.")
+            trace_data["steps"] = steps[:MAX_STEPS]
+            trace_data["truncated"] = True
+    except Exception as e:
+        print(f"⚠️ Error while truncating trace: {e}")
 
     variable_map = {}
     try:
-        if trace_data.get("steps"):
-            final_vars = trace_data["steps"][-1].get("variables", {})
+        steps = trace_data.get("steps", [])
+        if steps:
+            final_vars = steps[-1].get("variables", {}) if isinstance(steps, list) else {}
             var_names = list(final_vars.keys())
 
             if var_names:
                 print("🔹 Calling Gemini to analyze variables...")
+                # make Gemini call (async) — this will use configured timeouts in ai_explainer
                 variable_map = await get_ai_variable_map(req.code, var_names)
                 print("✅ Variable mapping done")
-
     except Exception as e:
         print(f"⚠️ Error during variable mapping: {e}")
 
@@ -150,7 +194,7 @@ async def test_gemini():
             "error": str(e),
             "elapsed": round(time.time() - start, 2)
         }
-    
+
 @app.get("/test-multiprocessing")
 def test_mp():
     import multiprocessing, time
