@@ -40,7 +40,7 @@ app.use(express.json()); // parse JSON
 app.use(
   "/python",
   createProxyMiddleware({
-    target: "http://localhost:5000",
+    target: "https://studymate-iqie.onrender.com",
     changeOrigin: true,
   })
 );
