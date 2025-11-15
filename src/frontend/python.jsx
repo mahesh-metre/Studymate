@@ -744,7 +744,7 @@ export default function Python() {
 
     // --- Backend API URL ---
     // --- 3. FIX: Hardcode API URL to avoid import.meta ---
-   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+   const API_PYTHON_URL = import.meta.env.VITE_API_PYTHON_URL;
 
     // --- Backend Interaction (UPGRADED) ---
      const handleVisualize = async () => {
@@ -759,7 +759,7 @@ export default function Python() {
         const inputs = userInput.split('\n');
 
         try {
-            const response = await fetch(`${API_BASE_URL}/python/visualize`, { 
+            const response = await fetch(`${API_PYTHON_URL}/visualize`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ code, inputs }),
@@ -808,7 +808,7 @@ export default function Python() {
         setAiSummary(""); // Clear summary
 
         try {
-            const response = await fetch(`${API_BASE_URL}/python/explain`, {
+            const response = await fetch(`${API_PYTHON_URL}/explain`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code_line: lineContent }),
@@ -835,7 +835,7 @@ export default function Python() {
         setAiLineExplanation(""); // Clear line explanation
 
         try {
-            const response = await fetch(`${API_BASE_URL}/python/summarize`, {
+            const response = await fetch(`${API_PYTHON_URL}/summarize`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 // Send the full code and the full trace
