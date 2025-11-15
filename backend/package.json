@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "server": "node server.js",
-    "python": "uvicorn main:app --host 0.0.0.0 --port 5000",
+    "python": "uvicorn main:app --host 0.0.0.0 --port 5000 --workers 1",
     "start": "concurrently \"npm run server\" \"npm run python\"",
     "render-start": "npm install && python3 -m pip install -r requirements.txt && npm run start",
     "dev": "nodemon server.js"
