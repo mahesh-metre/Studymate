@@ -1,4 +1,24 @@
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Decipher</title>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <!-- html2canvas for PNG export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- gif.js for GIF export -->
+    <script src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js"></script>
+
+    <!-- Worker file used by gif.js (must be inside public/) -->
+    <script src="/gif.worker.js"></script>
+
+    <!-- Your React app entry point -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
