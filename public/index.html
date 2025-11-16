@@ -5,18 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Decipher</title>
 
-    <!-- Load html2canvas BEFORE the body -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- PNG Export -->
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+    ></script>
 
-    <!-- Load gif.js -->
-    <script src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js"></script>
+    <!-- GIF Export -->
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js"
+    ></script>
 
-    <!-- Worker must exist in public/ -->
-    <script src="/gif.worker.js"></script>
+    <!-- Worker (must be inside public/) -->
+    <script defer src="/gif.worker.js"></script>
   </head>
 
   <body>
     <div id="root"></div>
+
+    <!-- React app -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
