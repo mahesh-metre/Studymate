@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import html2canvas from 'html2canvas'; // <-- 1. REMOVED
-import GIF from 'gif.js.optimized'; // <-- 2. REMOVED
+
 
 // --- CSS (GlobalStyles Component) ---
 const GlobalStyles = () => (
