@@ -11,7 +11,7 @@ if (typeof window !== "undefined") {
 
 // --- CSS (GlobalStyles Component) ---
 const GlobalStyles = () => (
-  <style>{`
+    <style>{`
     /* Minimal base styles - Tailwind handles the rest */
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -106,11 +106,11 @@ const GraphVisualizer = ({ name, graphData, variables }) => {
     const staticPositions = [
         { x: 300, y: 50 }, { x: 150, y: 130 }, { x: 450, y: 130 },
         { x: 100, y: 220 }, { x: 200, y: 220 }, { x: 400, y: 220 },
-        { x: 50, y: 50 }, { x: 550, y: 50 }, { x: 50, y: 250 }, { x: 550, y: 250 } 
+        { x: 50, y: 50 }, { x: 550, y: 50 }, { x: 50, y: 250 }, { x: 550, y: 250 }
     ];
     const nodeIds = Object.keys(graphData);
     const nodePositions = nodeIds.reduce((acc, nodeId, index) => {
-        acc[nodeId] = staticPositions[index % staticPositions.length]; 
+        acc[nodeId] = staticPositions[index % staticPositions.length];
         return acc;
     }, {});
     const nodes = nodeIds.map(id => ({
@@ -134,7 +134,7 @@ const GraphVisualizer = ({ name, graphData, variables }) => {
         // Find variable names from the map
         const queueVarName = Object.keys(variables.variable_map || {}).find(k => variables.variable_map[k] === 'queue');
         const stackVarName = Object.keys(variables.variable_map || {}).find(k => variables.variable_map[k] === 'stack');
-        
+
         // Get data from those variables, or default to checking hardcoded names
         const queue = (queueVarName && Array.isArray(variables[queueVarName])) ? variables[queueVarName] : (Array.isArray(variables.queue) ? variables.queue : []);
         const stack = (stackVarName && Array.isArray(variables[stackVarName])) ? variables[stackVarName] : (Array.isArray(variables.stack) ? variables.stack : []);
@@ -154,8 +154,8 @@ const GraphVisualizer = ({ name, graphData, variables }) => {
         <div className="mb-4">
             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
             <svg className="graph-svg w-full h-[300px] border border-gray-700 rounded bg-gray-900 mt-1" viewBox="0 0 600 300">
-                {edges.map(edge => ( <line key={edge.id} className="graph-edge" x1={nodePositions[edge.source]?.x} y1={nodePositions[edge.source]?.y} x2={nodePositions[edge.target]?.x} y2={nodePositions[edge.target]?.y} /> ))}
-                {nodes.map(node => ( <g key={node.id} className="graph-node"><circle cx={node.x} cy={node.y} r="22" fill={getNodeFill(node.id)} stroke="#38bdf8" strokeWidth="2" /><text x={node.x} y={node.y} >{node.id}</text> </g>))}
+                {edges.map(edge => (<line key={edge.id} className="graph-edge" x1={nodePositions[edge.source]?.x} y1={nodePositions[edge.source]?.y} x2={nodePositions[edge.target]?.x} y2={nodePositions[edge.target]?.y} />))}
+                {nodes.map(node => (<g key={node.id} className="graph-node"><circle cx={node.x} cy={node.y} r="22" fill={getNodeFill(node.id)} stroke="#38bdf8" strokeWidth="2" /><text x={node.x} y={node.y} >{node.id}</text> </g>))}
             </svg>
         </div>
     );
@@ -188,8 +188,8 @@ const StackVisualizer = ({ name, stack }) => {
                 )}
                 {/* Use stackItems here */}
                 {stackItems.map((item, index) => (
-                    <div 
-                        key={`${item}-${index}`} 
+                    <div
+                        key={`${item}-${index}`}
                         className={`flex items-center justify-center w-3/4 px-3 py-1 my-0.5 border border-purple-400 bg-purple-100 text-purple-900 rounded text-xs font-medium shadow ${index === stackItems.length - 1 ? 'font-bold' : ''}`}
                     >
                         {String(item)}
@@ -222,14 +222,14 @@ const QueueVisualizer = ({ name, queue }) => {
             <div className="flex items-center gap-2 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[56px] max-w-full overflow-x-auto scrollbar-hide">
                 <span className="text-xs text-gray-500 mr-2 flex-shrink-0">Front</span>
                 {queueItems.length === 0 && (
-                     <div className="flex-1 flex items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center">
                         <span className="text-gray-500 text-xs italic">Queue is empty</span>
                     </div>
                 )}
                 {/* Use queueItems here */}
                 {queueItems.map((item, index) => (
-                    <div 
-                        key={`${item}-${index}`} 
+                    <div
+                        key={`${item}-${index}`}
                         className="border border-green-400 bg-green-100 text-green-900 px-3 py-2 rounded text-xs text-center font-medium flex-shrink-0"
                     >
                         {String(item)}
@@ -278,7 +278,7 @@ const DictionaryVisualizer = ({ name, dictionary }) => {
 // --- Set Visualizer ---
 const SetVisualizer = ({ name, set }) => {
     const items = Array.isArray(set) ? set : [];
-    
+
     return (
         <div className="mb-4">
             <span className="font-semibold font-mono text-sm text-gray-300">{name} = set()</span>
@@ -289,7 +289,7 @@ const SetVisualizer = ({ name, set }) => {
                     </div>
                 )}
                 {items.map((item, index) => (
-                    <div 
+                    <div
                         key={`${item}-${index}`}
                         className="border border-purple-400 bg-purple-100 text-purple-900 px-3 py-1 rounded text-xs min-w-[30px] text-center font-medium"
                     >
@@ -312,18 +312,17 @@ const HeapVisualizer = ({ name, heap }) => {
             <div className="flex items-center gap-2 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[56px] max-w-full overflow-x-auto scrollbar-hide">
                 <span className="text-xs text-gray-500 mr-2 flex-shrink-0">Root (Min)</span>
                 {items.length === 0 && (
-                     <div className="flex-1 flex items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center">
                         <span className="text-gray-500 text-xs italic">Heap is empty</span>
                     </div>
                 )}
                 {items.map((item, index) => (
-                    <div 
+                    <div
                         key={`${item}-${index}`}
-                        className={`border ${
-                            index === 0 
-                                ? 'border-yellow-400 bg-yellow-100 text-yellow-900 font-bold' 
+                        className={`border ${index === 0
+                                ? 'border-yellow-400 bg-yellow-100 text-yellow-900 font-bold'
                                 : 'border-gray-600 bg-gray-700 text-white'
-                        } px-3 py-2 rounded text-xs text-center font-medium flex-shrink-0`}
+                            } px-3 py-2 rounded text-xs text-center font-medium flex-shrink-0`}
                     >
                         {String(item)}
                     </div>
@@ -341,7 +340,7 @@ const LinkedListVisualizer = ({ name, list }) => {
         if (!node || typeof node !== 'object' || node === null) {
             return null; // End of list
         }
-        
+
         if (typeof node === 'string' && node.includes('Circular reference')) {
             return { data: '...', next: null };
         }
@@ -349,7 +348,7 @@ const LinkedListVisualizer = ({ name, list }) => {
         // --- FIX: Use .data (or .key for the tree) ---
         const data = node.data; // Changed from node.key
         const nextNode = node.next;
-        
+
         return {
             data: data,
             next: parseList(nextNode) // Recurse
@@ -366,7 +365,7 @@ const LinkedListVisualizer = ({ name, list }) => {
         }
         return nodes;
     };
-    
+
     // Start parsing from the head
     // Check if the list object itself and its head exist
     const headNode = (list && list.head) ? parseList(list.head) : null;
@@ -374,7 +373,7 @@ const LinkedListVisualizer = ({ name, list }) => {
 
     // Handle case where list exists but head is null
     if (list && !list.head) {
-         return (
+        return (
             <div className="mb-4">
                 <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
                 <div className="flex items-center gap-1 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[56px] max-w-full overflow-x-auto scrollbar-hide">
@@ -391,15 +390,15 @@ const LinkedListVisualizer = ({ name, list }) => {
             <div className="flex items-center gap-1 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[56px] max-w-full overflow-x-auto scrollbar-hide">
                 <span className="text-xs text-gray-500 mr-2 flex-shrink-0">Head</span>
                 {nodes.length === 0 && (
-                     <div className="flex-1 flex items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center">
                         <span className="text-gray-500 text-xs italic">Linked List is empty</span>
                     </div>
                 )}
-                
+
                 {nodes.map((data, index) => (
                     <React.Fragment key={index}>
                         {/* Node */}
-                        <div 
+                        <div
                             className="border border-sky-400 bg-sky-100 text-sky-900 px-3 py-2 rounded text-xs text-center font-medium flex-shrink-0"
                         >
                             {String(data)}
@@ -410,9 +409,9 @@ const LinkedListVisualizer = ({ name, list }) => {
                         )}
                     </React.Fragment>
                 ))}
-                
+
                 {nodes.length > 0 && (
-                     <React.Fragment>
+                    <React.Fragment>
                         <span className="text-sky-400 font-mono text-lg flex-shrink-0">→</span>
                         <span className="text-gray-500 text-xs ml-1 flex-shrink-0">None</span>
                     </React.Fragment>
@@ -425,7 +424,7 @@ const LinkedListVisualizer = ({ name, list }) => {
 
 // --- NEW: Binary Tree Visualizer ---
 const BinaryTreeVisualizer = ({ name, root }) => {
-    
+
     // This is a recursive helper component to render the tree
     const TreeNode = ({ node }) => {
         // Base case: If node is null (or not an object), don't render anything
@@ -455,7 +454,7 @@ const BinaryTreeVisualizer = ({ name, root }) => {
                 <div className="tree-node-value" title={`Node(${key})`}>
                     {String(key)}
                 </div>
-                
+
                 {/* Render this node's children */}
                 {hasChildren && (
                     <div className="tree-children">
@@ -485,10 +484,10 @@ const BinaryTreeVisualizer = ({ name, root }) => {
 
 // --- VariableDisplay Component (UPGRADED) ---
 const VariableDisplay = ({ variables, variableMap }) => {
-    if (!variables || typeof variables !== 'object') return null; 
-    
+    if (!variables || typeof variables !== 'object') return null;
+
     const vizMap = variableMap || {};
-    
+
     const specialVarNames = Object.keys(vizMap).filter(name =>
         vizMap[name] === 'graph' ||
         vizMap[name] === 'stack' ||
@@ -503,17 +502,17 @@ const VariableDisplay = ({ variables, variableMap }) => {
 
     const internalVars = ['current_node', 'current', 'node', 'neighbors', 'start_node', 'start', 'variable_map'];
 
-    const nonSpecialVars = Object.entries(variables).filter(([name]) => 
+    const nonSpecialVars = Object.entries(variables).filter(([name]) =>
         !specialVarNames.includes(name) && !internalVars.includes(name)
     );
-    
+
     if (nonSpecialVars.length === 0) return <p className="text-gray-500 text-xs italic">(No other variables to show)</p>;
 
     return (
         <div>
             <h3 className="text-md font-semibold mb-2 text-gray-400 flex-shrink-0">Other Variables</h3>
             {nonSpecialVars.map(([name, value]) => {
-                
+
                 if (Array.isArray(value)) {
                     return (
                         <div key={name} className="mb-4">
@@ -529,7 +528,7 @@ const VariableDisplay = ({ variables, variableMap }) => {
                         </div>
                     );
                 }
-                
+
                 // Simple Variable Display
                 if (typeof value !== 'object' || value === null) {
                     return (
@@ -539,10 +538,10 @@ const VariableDisplay = ({ variables, variableMap }) => {
                         </div>
                     );
                 }
-                
+
                 // Fallback for complex objects that weren't mapped
                 if (typeof value === 'object' && value !== null && value.__type__) {
-                     return (
+                    return (
                         <div key={name} className="mb-2">
                             <span className="font-semibold font-mono text-sm text-gray-300">{name} = </span>
                             <span className="text-sm text-gray-500">{`[${value.__type__} object]`}</span>
@@ -550,7 +549,7 @@ const VariableDisplay = ({ variables, variableMap }) => {
                     );
                 }
 
-                return null; 
+                return null;
             })}
         </div>
     );
@@ -558,16 +557,16 @@ const VariableDisplay = ({ variables, variableMap }) => {
 
 // --- StateVisualizer Component (UPGRADED) ---
 const StateVisualizer = ({ variables, variableMap, isFinished }) => {
-     if (!variables || typeof variables !== 'object' || Object.keys(variables).length === 0) {
-         if (isFinished) return <div className="mt-4 p-2 text-center text-green-400 bg-green-900/50 rounded border border-green-700">Execution Finished!</div>;
-         return <p className="text-gray-500 text-xs italic">(No variables to show for this step)</p>;
-     }
-     
-     const vizMap = variableMap || {};
-     // --- Add treeVar ---
-     let graphVar = null, stackVar = null, queueVar = null, dictVar = null, setVar = null, heapVar = null, linkedListVar = null, treeVar = null; 
+    if (!variables || typeof variables !== 'object' || Object.keys(variables).length === 0) {
+        if (isFinished) return <div className="mt-4 p-2 text-center text-green-400 bg-green-900/50 rounded border border-green-700">Execution Finished!</div>;
+        return <p className="text-gray-500 text-xs italic">(No variables to show for this step)</p>;
+    }
 
-     for (const name in vizMap) {
+    const vizMap = variableMap || {};
+    // --- Add treeVar ---
+    let graphVar = null, stackVar = null, queueVar = null, dictVar = null, setVar = null, heapVar = null, linkedListVar = null, treeVar = null;
+
+    for (const name in vizMap) {
         if (vizMap[name] === 'graph') graphVar = name;
         if (vizMap[name] === 'stack') stackVar = name;
         if (vizMap[name] === 'queue') queueVar = name;
@@ -576,57 +575,57 @@ const StateVisualizer = ({ variables, variableMap, isFinished }) => {
         if (vizMap[name] === 'heap' || vizMap[name] === 'priority_queue') heapVar = name;
         if (vizMap[name] === 'linked_list') linkedListVar = name;
         if (vizMap[name] === 'binary_tree') treeVar = name; // <-- Find the tree
-     }
+    }
 
-     const graphData = graphVar && variables[graphVar];
-     const stackData = stackVar && variables[stackVar];
-     const queueData = queueVar && variables[queueVar];
-     const dictData = dictVar && variables[dictVar];
-     const setData = setVar && variables[setVar];
-     const heapData = heapVar && variables[heapVar]; 
-     const linkedListData = linkedListVar && variables[linkedListVar];
-     const treeData = treeVar && variables[treeVar]; // <-- Get the tree data
-     
-     // --- Add treeData ---
-     const hasSpecialViz = graphData || stackData || queueData || dictData || setData || heapData || linkedListData || treeData; 
+    const graphData = graphVar && variables[graphVar];
+    const stackData = stackVar && variables[stackVar];
+    const queueData = queueVar && variables[queueVar];
+    const dictData = dictVar && variables[dictVar];
+    const setData = setVar && variables[setVar];
+    const heapData = heapVar && variables[heapVar];
+    const linkedListData = linkedListVar && variables[linkedListVar];
+    const treeData = treeVar && variables[treeVar]; // <-- Get the tree data
 
-     return (
-        <div className="space-y-4"> 
-          {/* Render the component if its data exists */}
-          {graphData && (
-            <GraphVisualizer name={graphVar} graphData={graphData} variables={variables} />
-          )}
-          {dictData && (
-            <DictionaryVisualizer name={dictVar} dictionary={dictData} />
-          )}
-          {stackData && (
-            <StackVisualizer name={stackVar} stack={stackData} />
-          )}
-          {queueData && (
-            <QueueVisualizer name={queueVar} queue={queueData} />
-          )}
-          {setData && (
-            <SetVisualizer name={setVar} set={setData} />
-          )}
-          {heapData && (
-            <HeapVisualizer name={heapVar} heap={heapData} />
-          )}
-          {linkedListData && (
-            <LinkedListVisualizer name={linkedListVar} list={linkedListData} />
-          )}
-          
-          {/* --- RENDER THE BINARY TREE VISUALIZER --- */}
-          {treeData && (
-            <BinaryTreeVisualizer name={treeVar} root={treeData} />
-          )}
-          
-          {/* Add a divider if we had special viz AND we have other vars */}
-          {hasSpecialViz && <div className="border-t border-gray-700 pt-4"></div>}
+    // --- Add treeData ---
+    const hasSpecialViz = graphData || stackData || queueData || dictData || setData || heapData || linkedListData || treeData;
 
-          <VariableDisplay variables={variables} variableMap={vizMap} />
-          {isFinished && <div className="mt-4 p-2 text-center text-green-400 bg-green-900/50 rounded border border-green-700">Execution Finished!</div>}
+    return (
+        <div className="space-y-4">
+            {/* Render the component if its data exists */}
+            {graphData && (
+                <GraphVisualizer name={graphVar} graphData={graphData} variables={variables} />
+            )}
+            {dictData && (
+                <DictionaryVisualizer name={dictVar} dictionary={dictData} />
+            )}
+            {stackData && (
+                <StackVisualizer name={stackVar} stack={stackData} />
+            )}
+            {queueData && (
+                <QueueVisualizer name={queueVar} queue={queueData} />
+            )}
+            {setData && (
+                <SetVisualizer name={setVar} set={setData} />
+            )}
+            {heapData && (
+                <HeapVisualizer name={heapVar} heap={heapData} />
+            )}
+            {linkedListData && (
+                <LinkedListVisualizer name={linkedListVar} list={linkedListData} />
+            )}
+
+            {/* --- RENDER THE BINARY TREE VISUALIZER --- */}
+            {treeData && (
+                <BinaryTreeVisualizer name={treeVar} root={treeData} />
+            )}
+
+            {/* Add a divider if we had special viz AND we have other vars */}
+            {hasSpecialViz && <div className="border-t border-gray-700 pt-4"></div>}
+
+            <VariableDisplay variables={variables} variableMap={vizMap} />
+            {isFinished && <div className="mt-4 p-2 text-center text-green-400 bg-green-900/50 rounded border border-green-700">Execution Finished!</div>}
         </div>
-      );
+    );
 };
 
 // --- Default Code ---
@@ -676,7 +675,7 @@ const PauseIcon = () => (
 
 const ResetIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+        <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
     </svg>
 );
 
@@ -692,14 +691,14 @@ const DownloadIcon = () => (
 
 const GifIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-4" />
-      <path d="M9 3V1" />
-      <path d="M12 3V1" />
-      <path d="M15 3V1" />
-      <path d="M12 14v-4h-2" />
-      <path d="M12 10h.01" />
-      <path d="M15 14v-4h2" />
-      <path d="M17 10h.01" />
+        <path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-4" />
+        <path d="M9 3V1" />
+        <path d="M12 3V1" />
+        <path d="M15 3V1" />
+        <path d="M12 14v-4h-2" />
+        <path d="M12 10h.01" />
+        <path d="M15 14v-4h2" />
+        <path d="M17 10h.01" />
     </svg>
 );
 
@@ -715,12 +714,12 @@ const Spinner = () => (
 // --- Main App Component ---
 export default function Python() {
     // ADD THESE TWO LINES
-  const location = useLocation();
-  const initialCode = location.state?.code || defaultCodeWithInput;
+    const location = useLocation();
+    const initialCode = location.state?.code || defaultCodeWithInput;
     // --- State Hooks ---
     const [code, setCode] = useState(initialCode);
-    const [userInput, setUserInput] = useState(""); 
-    const [trace, setTrace] = useState([]); 
+    const [userInput, setUserInput] = useState("");
+    const [trace, setTrace] = useState([]);
     // --- NEW: AI Variable Map State ---
     const [variableMap, setVariableMap] = useState({});
     const [currentStep, setCurrentStep] = useState(0);
@@ -729,9 +728,9 @@ export default function Python() {
     const [editorWidth, setEditorWidth] = useState(50);
     const containerRef = useRef(null);
     const isResizing = useRef(false);
-    
+
     // --- REFINED: Ref for the visualizer panel ---
-    const visualizerRef = useRef(null); 
+    const visualizerRef = useRef(null);
 
     // --- REFINED: AI Explanation State ---
     const [aiLineExplanation, setAiLineExplanation] = useState("");
@@ -750,11 +749,11 @@ export default function Python() {
 
     // --- Backend API URL ---
     // --- 3. FIX: Hardcode API URL to avoid import.meta ---
-   const API_PYTHON_URL = import.meta.env.VITE_API_PYTHON_URL;
+    const API_PYTHON_URL = import.meta.env.VITE_API_PYTHON_URL;
 
     // --- Backend Interaction (UPGRADED) ---
-     const handleVisualize = async () => {
-        setIsLoading(true); setError(null); setTrace([]); setCurrentStep(0); 
+    const handleVisualize = async () => {
+        setIsLoading(true); setError(null); setTrace([]); setCurrentStep(0);
         // --- NEW: Clear old summaries on new run ---
         setAiLineExplanation("");
         setAiSummary("");
@@ -765,39 +764,39 @@ export default function Python() {
         const inputs = userInput.split('\n');
 
         try {
-            const response = await fetch(`${API_PYTHON_URL}/visualize`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
+            const response = await fetch(`${API_PYTHON_URL}/visualize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code, inputs }),
             });
 
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
-            
+
             if (data.error) setError(data.error);
 
             // --- SMART AI MAPPER LOGIC ---
             const stepsArray = Array.isArray(data.steps) ? data.steps : [];
             const varMap = (data.variable_map && typeof data.variable_map === 'object') ? data.variable_map : {};
-            
+
             const formattedTrace = stepsArray.map(step => {
                 const currentVars = (step && typeof step.variables === 'object' && step.variables !== null) ? step.variables : {};
                 const output = (step && typeof step.output === 'string') ? step.output : '';
                 const line = (step && typeof step.line === 'number') ? step.line : null;
                 const event = (step && typeof step.event === 'string') ? step.event : 'line';
                 // --- Store the map in *every* step for convenience ---
-                return { line, event, variables: {...currentVars, variable_map: varMap}, output };
+                return { line, event, variables: { ...currentVars, variable_map: varMap }, output };
             });
 
             setTrace(formattedTrace || []);
             setVariableMap(varMap); // <-- Store the map from the AI
 
-        } catch (e) { 
-            setError(`Failed to connect to the server: ${e.message}`); 
-            setTrace([]); 
+        } catch (e) {
+            setError(`Failed to connect to the server: ${e.message}`);
+            setTrace([]);
             setVariableMap({});
-        } finally { 
-            setIsLoading(false); 
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -860,13 +859,13 @@ export default function Python() {
 
     // --- Stepping Logic ---
     // REFINED: handleNext and handlePrevious now stop autoplay
-    const handleNext = () => { 
+    const handleNext = () => {
         setIsPlaying(false);
         if (trace && currentStep < trace.length - 1) {
             setCurrentStep(currentStep + 1);
         }
-    }; 
-    const handlePrevious = () => { 
+    };
+    const handlePrevious = () => {
         setIsPlaying(false);
         if (currentStep > 0) {
             setCurrentStep(currentStep - 1);
@@ -946,13 +945,13 @@ export default function Python() {
             setError("GIF export libraries are not loaded.");
             return;
         }
-        
+
         setIsPlaying(false); // Stop autoplay
         setIsExporting("GIF... 0%");
 
         const originalStep = currentStep;
         const panel = visualizerRef.current;
-        
+
         const gif = new window.GIF({
             workers: 2,
             quality: 10,
@@ -965,20 +964,20 @@ export default function Python() {
         // Loop through each step, take a screenshot, and add to GIF
         for (let i = 0; i < trace.length; i++) {
             setIsExporting(`GIF... ${Math.round((i / trace.length) * 100)}%`);
-            
+
             // 1. Set the app to the correct step
             setCurrentStep(i);
-            
+
             // 2. Wait for React to re-render the UI
             // A short delay is needed for the DOM to update
-            await new Promise(resolve => setTimeout(resolve, 50)); 
-            
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             // 3. Take the screenshot
             const canvas = await window.html2canvas(panel, {
                 useCORS: true,
                 backgroundColor: '#111827' // bg-gray-900
             });
-            
+
             // 4. Add the screenshot as a frame
             gif.addFrame(canvas, {
                 copy: true,
@@ -1001,31 +1000,31 @@ export default function Python() {
     // --- Resizing Logic ---
     const handleMouseDown = () => (isResizing.current = true);
     const handleMouseUp = () => (isResizing.current = false);
-    const handleMouseMove = (e) => { 
-        if (!isResizing.current || !containerRef.current) return; 
-        const rect = containerRef.current.getBoundingClientRect(); 
-        let newWidth = ((e.clientX - rect.left) / rect.width) * 100; 
-        if (newWidth < 20) newWidth = 20; 
-        if (newWidth > 80) newWidth = 80; 
-        setEditorWidth(newWidth); 
+    const handleMouseMove = (e) => {
+        if (!isResizing.current || !containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        let newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+        if (newWidth < 20) newWidth = 20;
+        if (newWidth > 80) newWidth = 80;
+        setEditorWidth(newWidth);
     };
-    
-    useEffect(() => { 
-        window.addEventListener("mousemove", handleMouseMove); 
-        window.addEventListener("mouseup", handleMouseUp); 
-        return () => { 
-            window.removeEventListener("mousemove", handleMouseMove); 
-            window.removeEventListener("mouseup", handleMouseUp); 
-        }; 
+
+    useEffect(() => {
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
     }, []);
 
     // --- Derived State for Rendering ---
-    const currentStepData = (Array.isArray(trace) && trace.length > currentStep) ? trace[currentStep] : null; 
+    const currentStepData = (Array.isArray(trace) && trace.length > currentStep) ? trace[currentStep] : null;
     const currentLine = currentStepData?.event === 'line' ? currentStepData.line : null;
     const isFinished = currentStepData?.event === 'finished';
-    const currentOutput = typeof currentStepData?.output === 'string' ? currentStepData.output : ''; 
+    const currentOutput = typeof currentStepData?.output === 'string' ? currentStepData.output : '';
     const codeLines = typeof code === 'string' ? code.split('\n') : [];
-    
+
     // --- UPGRADED: Get variable map from current step ---
     const currentVariableMap = currentStepData?.variables?.variable_map || variableMap;
 
@@ -1040,23 +1039,23 @@ export default function Python() {
                 <div style={{ width: `${editorWidth}%` }} className="bg-gray-800/70 backdrop-blur-lg rounded-2xl p-4 shadow-lg flex flex-col">
                     {/* Code Editor */}
                     <h2 className="text-lg font-semibold mb-2 text-gray-200">Python Code</h2>
-                     <div className="flex flex-1 border border-gray-700 rounded-lg overflow-hidden">
-                        {/* Line Gutter */ }
+                    <div className="flex flex-1 border border-gray-700 rounded-lg overflow-hidden">
+                        {/* Line Gutter */}
                         <div className="bg-gray-900 p-2 text-right text-gray-500 text-xs select-none font-mono">
-                           {codeLines.map((_, i) => ( 
-                             <div key={i} className={`flex items-center justify-end h-[21px] ${i + 1 === currentLine ? 'text-cyan-400 font-bold' : ''}`}>
-                               {/* --- NEW: AI Button --- */}
-                               <button 
-                                 title="Ask AI to explain this line"
-                                 onClick={() => handleExplainLine(i + 1)}
-                                 className="group w-[14px] mr-2 text-gray-600 hover:text-cyan-400"
-                               >
-                                 <AiIcon />
-                               </button> 
-                               {i + 1}
-                             </div>
-                           ))}
-                         </div>
+                            {codeLines.map((_, i) => (
+                                <div key={i} className={`flex items-center justify-end h-[21px] ${i + 1 === currentLine ? 'text-cyan-400 font-bold' : ''}`}>
+                                    {/* --- NEW: AI Button --- */}
+                                    <button
+                                        title="Ask AI to explain this line"
+                                        onClick={() => handleExplainLine(i + 1)}
+                                        className="group w-[14px] mr-2 text-gray-600 hover:text-cyan-400"
+                                    >
+                                        <AiIcon />
+                                    </button>
+                                    {i + 1}
+                                </div>
+                            ))}
+                        </div>
                         {/* Text Area */}
                         <textarea value={code} onChange={(e) => setCode(e.target.value)} className="w-full flex-1 bg-gray-900 text-sm text-green-300 p-2 font-mono resize-none focus:outline-none overflow-auto scrollbar-hide leading-[21px]" spellCheck="false" />
                     </div>
@@ -1064,15 +1063,15 @@ export default function Python() {
                     {/* User Input */}
                     <h3 className="text-lg font-semibold mb-2 text-gray-200 mt-4">User Input (one per line)</h3>
                     <textarea
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      className="w-full h-24 bg-gray-900 text-sm text-green-300 p-2 font-mono resize-none focus:outline-none border border-gray-700 rounded-lg scrollbar-hide"
-                      placeholder="(Optional) Enter any user input here, one per line, if your code uses the input() function."
-                      spellCheck="false"
+                        value={userInput}
+                        onChange={(e) => setUserInput(e.target.value)}
+                        className="w-full h-24 bg-gray-900 text-sm text-green-300 p-2 font-mono resize-none focus:outline-none border border-gray-700 rounded-lg scrollbar-hide"
+                        placeholder="(Optional) Enter any user input here, one per line, if your code uses the input() function."
+                        spellCheck="false"
                     />
-                    
+
                     {/* Visualize Button */}
-                    <button onClick={handleVisualize} disabled={isLoading} className={`mt-4 px-5 py-2.5 rounded-full font-semibold transition-all ${ isLoading ? "bg-gray-700 cursor-not-allowed text-gray-400" : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white" }`}>
+                    <button onClick={handleVisualize} disabled={isLoading} className={`mt-4 px-5 py-2.5 rounded-full font-semibold transition-all ${isLoading ? "bg-gray-700 cursor-not-allowed text-gray-400" : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white"}`}>
                         {isLoading ? "Visualizing..." : "Visualize Execution"}
                     </button>
                 </div>
@@ -1082,7 +1081,7 @@ export default function Python() {
 
                 {/* Visualization & State Panel */}
                 <div style={{ width: `${100 - editorWidth}%` }} className="bg-gray-800/70 backdrop-blur-lg rounded-2xl p-4 shadow-lg flex flex-col overflow-hidden relative">
-                    
+
                     {/* --- NEW: Export Loading Overlay --- */}
                     {isExporting && (
                         <div className="absolute inset-0 z-50 bg-black/80 flex flex-col items-center justify-center">
@@ -1091,7 +1090,7 @@ export default function Python() {
                             {isExporting.startsWith("GIF") && <span className="text-sm text-gray-400 mt-2">This may take a moment...</span>}
                         </div>
                     )}
-                    
+
                     {/* Controls */}
                     {Array.isArray(trace) && trace.length > 0 && (
                         <div className="mb-3 p-2 bg-gray-700/50 rounded-lg">
@@ -1101,16 +1100,16 @@ export default function Python() {
                                     <ResetIcon />
                                 </button>
                                 <button onClick={handlePrevious} disabled={currentStep === 0} className="px-4 py-1 bg-gray-600 rounded disabled:opacity-50 hover:bg-gray-500 transition">Previous</button>
-                                
+
                                 {/* --- NEW: Play/Pause Button --- */}
                                 <button onClick={handleAutoplayToggle} title={isPlaying ? "Pause" : "Play"} className="px-3 py-2 bg-cyan-600 rounded disabled:opacity-50 hover:bg-cyan-500 transition">
                                     {isPlaying ? <PauseIcon /> : <PlayIcon />}
                                 </button>
-                                
+
                                 <span className="font-semibold text-sm">Step {currentStep + 1} of {trace.length}</span>
                                 <button onClick={handleNext} disabled={!trace || currentStep >= trace.length - 1} className="px-4 py-1 bg-gray-600 rounded disabled:opacity-50 hover:bg-gray-500 transition">Next</button>
                             </div>
-                            
+
                             {/* --- NEW: Speed Slider --- */}
                             <div className="flex items-center gap-2 mt-3">
                                 <label htmlFor="speed" className="text-xs text-gray-400">Speed</label>
@@ -1129,27 +1128,33 @@ export default function Python() {
                         </div>
                     )}
                     {error && <div className="p-3 mb-3 bg-red-900/50 text-red-300 border border-red-700 rounded-lg text-sm"><strong>Error:</strong> {error}</div>}
-                    
+
                     {/* --- Panel Content (Wrapped in Ref) --- */}
                     <div className="flex-1 flex flex-col overflow-auto scrollbar-hide space-y-4 bg-gray-900/0">
-                         {/* --- FIXED: Ref is now on this div --- */}
-                         <div ref={visualizerRef} className="state-section bg-gray-900 rounded-lg">
+                        {/* --- FIXED: Ref is now on this div --- */}
+                        <div
+                            ref={visualizerRef}
+                            className="state-section bg-gray-900 rounded-lg"
+                            style={{
+                                backgroundColor: "rgb(17,24,39)",
+                            }}
+                        >
                             <h2 className="text-lg font-semibold mb-2 text-gray-200 flex-shrink-0 px-3 pt-3">Execution State</h2>
-                             <div className="state-display p-3 text-sm overflow-auto scrollbar-hide min-h-[100px]">
+                            <div className="state-display p-3 text-sm overflow-auto scrollbar-hide min-h-[100px]">
                                 {Array.isArray(trace) && trace.length > 0 && currentStepData ? (
-                                    <StateVisualizer 
-                                        variables={currentStepData.variables || {}} 
-                                        variableMap={currentVariableMap} 
-                                        isFinished={isFinished} 
+                                    <StateVisualizer
+                                        variables={currentStepData.variables || {}}
+                                        variableMap={currentVariableMap}
+                                        isFinished={isFinished}
                                     />
-                                ) : ( <p className="text-gray-500 text-xs italic">Run visualization to see the steps here.</p> )}
+                                ) : (<p className="text-gray-500 text-xs italic">Run visualization to see the steps here.</p>)}
                             </div>
                         </div>
 
                         {/* --- REFINED: AI Explainer Panel (Handles both Line and Summary) --- */}
                         <div className="ai-section">
                             <h2 className="text-lg font-semibold mb-2 text-gray-200">AI Explainer</h2>
-                            
+
                             {/* NEW: Show "Get Summary" button when finished */}
                             {isFinished && !aiSummary && !isSummaryLoading && (
                                 <button
@@ -1159,21 +1164,21 @@ export default function Python() {
                                     Get AI Summary of Execution
                                 </button>
                             )}
-                            
+
                             <div className="ai-panel min-h-[6rem] bg-gray-900 border border-gray-700 text-gray-300 rounded-lg p-3 text-sm font-mono overflow-auto scrollbar-hide whitespace-pre-wrap">
                                 {isSummaryLoading
                                     ? "Analyzing execution..."
                                     : aiSummary
-                                    ? aiSummary
-                                    : isLineLoading
-                                    ? "Asking AI about line..."
-                                    : aiLineExplanation
-                                    ? aiLineExplanation
-                                    : "Click the icon next to a line for a quick explanation, or run the code to get a full summary."
+                                        ? aiSummary
+                                        : isLineLoading
+                                            ? "Asking AI about line..."
+                                            : aiLineExplanation
+                                                ? aiLineExplanation
+                                                : "Click the icon next to a line for a quick explanation, or run the code to get a full summary."
                                 }
                             </div>
                         </div>
-                        
+
                         <div className="flex-shrink-0">
                             <h2 className="text-lg font-semibold mb-2 text-gray-200">Output (Print Statements)</h2>
                             <div className="output-panel h-24 bg-gray-900 border border-gray-700 text-gray-300 rounded-lg p-3 text-xs font-mono overflow-auto scrollbar-hide whitespace-pre-wrap">
