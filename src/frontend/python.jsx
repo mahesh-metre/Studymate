@@ -4,8 +4,10 @@ import { useLocation } from "react-router-dom";
 import html2canvas from "html2canvas";
 import GIF from "gif.js.optimized";
 
-window.html2canvas = html2canvas;
-window.GIF = GIF;
+if (typeof window !== "undefined") {
+    window.html2canvas = html2canvas;
+    window.GIF = GIF;
+}
 
 // --- CSS (GlobalStyles Component) ---
 const GlobalStyles = () => (
