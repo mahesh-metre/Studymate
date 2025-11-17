@@ -528,6 +528,7 @@ const VariableDisplay = ({ variables, variableMap }) => {
                                             padding: "0 8px",       // horizontal padding only
                                             minWidth: "32px",
                                         }}
+                                        key={index}
                                     >
                                         {String(item)}
                                     </div>
