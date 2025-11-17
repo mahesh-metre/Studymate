@@ -9,21 +9,23 @@ if (typeof window !== "undefined") {
     window.GIF = GIF;
 }
 
-const originalParseColor = window.html2canvas.Rendering.CanvasRenderer.prototype.parseColor;
+if (typeof window !== "undefined") {
+    window.html2canvas = html2canvas;
 
-window.html2canvas.Rendering.CanvasRenderer.prototype.parseColor = function (color) {
-    try {
-        // If OKLCH detected → force RGB fallback
-        if (typeof color === "string" && color.startsWith("oklch")) {
-            console.log(color);
-            return { r: 0, g: 0, b: 0, a: 1 }; // fallback to black
+    const originalParse = window.html2canvas.Color.parse;
+
+    window.html2canvas.Color.parse = function (value) {
+        try {
+            if (typeof value === "string" && value.startsWith("oklch")) {
+                // fallback to black (or return null)
+                return { r: 0, g: 0, b: 0, a: 1 };
+            }
+            return originalParse.call(this, value);
+        } catch (e) {
+            return { r: 0, g: 0, b: 0, a: 1 };
         }
-        return originalParseColor.call(this, color);
-    } catch (e) {
-        // swallow parser errors
-        return { r: 0, g: 0, b: 0, a: 1 };
-    }
-};
+    };
+}
 
 // --- CSS (GlobalStyles Component) ---
 const GlobalStyles = () => (
