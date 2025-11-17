@@ -9,24 +9,6 @@ if (typeof window !== "undefined") {
     window.GIF = GIF;
 }
 
-if (typeof window !== "undefined") {
-    window.html2canvas = html2canvas;
-
-    const originalParse = window.html2canvas.Color.parse;
-
-    window.html2canvas.Color.parse = function (value) {
-        try {
-            if (typeof value === "string" && value.startsWith("oklch")) {
-                // fallback to black (or return null)
-                return { r: 0, g: 0, b: 0, a: 1 };
-            }
-            return originalParse.call(this, value);
-        } catch (e) {
-            return { r: 0, g: 0, b: 0, a: 1 };
-        }
-    };
-}
-
 // --- CSS (GlobalStyles Component) ---
 const GlobalStyles = () => (
     <style>{`
@@ -935,18 +917,52 @@ export default function Python() {
 
     // Export the *current* step as a PNG
     const handleExportPNG = async () => {
-        // --- 4. Use window.html2canvas ---
         if (!visualizerRef.current || typeof window.html2canvas === 'undefined') {
             setError("PNG export library is not loaded.");
             return;
         }
+
         setIsExporting("PNG...");
 
         try {
             const canvas = await window.html2canvas(visualizerRef.current, {
                 useCORS: true,
-                backgroundColor: '#111827' // bg-gray-900
+                backgroundColor: '#111827',
+
+                // 💥 THE FIX: remove ALL OKLCH colors before rendering
+                onclone: (doc) => {
+                    const all = doc.querySelectorAll("*");
+
+                    all.forEach((el) => {
+                        const style = doc.defaultView.getComputedStyle(el);
+
+                        const fix = (prop) => {
+                            const value = style[prop];
+                            if (!value) return null;
+
+                            if (
+                                value.startsWith("oklch") ||
+                                value.startsWith("oklab") ||
+                                value.startsWith("OKLAB") ||
+                                value.startsWith("OKLCH")
+                            ) {
+                                return "rgb(17, 24, 39)"; // safe fallback
+                            }
+                            return null;
+                        };
+
+                        const bg = fix("backgroundColor");
+                        const border = fix("borderColor");
+                        const text = fix("color");
+
+                        if (bg) el.style.backgroundColor = bg;
+                        if (border) el.style.borderColor = "rgb(55,65,81)";
+                        if (text) el.style.color = "#fff";
+                    });
+                }
+
             });
+
             triggerDownload(canvas.toDataURL('image/png'), `decipher-step-${currentStep + 1}.png`);
         } catch (e) {
             console.error("Error exporting PNG:", e);
@@ -958,13 +974,12 @@ export default function Python() {
 
     // Export the *entire animation* as a GIF
     const handleExportGIF = async () => {
-        // --- 5. Use window.GIF and window.html2canvas ---
         if (!visualizerRef.current || !trace.length || typeof window.GIF === 'undefined' || typeof window.html2canvas === 'undefined') {
             setError("GIF export libraries are not loaded.");
             return;
         }
 
-        setIsPlaying(false); // Stop autoplay
+        setIsPlaying(false);
         setIsExporting("GIF... 0%");
 
         const originalStep = currentStep;
@@ -975,38 +990,62 @@ export default function Python() {
             quality: 10,
             width: panel.offsetWidth,
             height: panel.offsetHeight,
-            // --- FIXED: Use local worker script ---
             workerScript: '/gif.worker.js'
         });
 
-        // Loop through each step, take a screenshot, and add to GIF
         for (let i = 0; i < trace.length; i++) {
             setIsExporting(`GIF... ${Math.round((i / trace.length) * 100)}%`);
 
-            // 1. Set the app to the correct step
             setCurrentStep(i);
-
-            // 2. Wait for React to re-render the UI
-            // A short delay is needed for the DOM to update
             await new Promise(resolve => setTimeout(resolve, 50));
 
-            // 3. Take the screenshot
             const canvas = await window.html2canvas(panel, {
                 useCORS: true,
-                backgroundColor: '#111827' // bg-gray-900
+                backgroundColor: '#111827',
+
+                // 💥 THE FIX: remove ALL OKLCH colors before rendering
+                onclone: (doc) => {
+                    const all = doc.querySelectorAll("*");
+
+                    all.forEach((el) => {
+                        const style = doc.defaultView.getComputedStyle(el);
+
+                        const fix = (prop) => {
+                            const value = style[prop];
+                            if (!value) return null;
+
+                            if (
+                                value.startsWith("oklch") ||
+                                value.startsWith("oklab") ||
+                                value.startsWith("OKLAB") ||
+                                value.startsWith("OKLCH")
+                            ) {
+                                return "rgb(17, 24, 39)"; // safe fallback
+                            }
+                            return null;
+                        };
+
+                        const bg = fix("backgroundColor");
+                        const border = fix("borderColor");
+                        const text = fix("color");
+
+                        if (bg) el.style.backgroundColor = bg;
+                        if (border) el.style.borderColor = "rgb(55,65,81)";
+                        if (text) el.style.color = "#fff";
+                    });
+                }
+
             });
 
-            // 4. Add the screenshot as a frame
             gif.addFrame(canvas, {
                 copy: true,
-                delay: autoplaySpeed // Use the speed from the slider
+                delay: autoplaySpeed
             });
         }
 
         gif.on('finished', (blob) => {
             triggerDownload(URL.createObjectURL(blob), 'decipher-visualization.gif');
             setIsExporting(null);
-            // Restore original step
             setCurrentStep(originalStep);
         });
 
