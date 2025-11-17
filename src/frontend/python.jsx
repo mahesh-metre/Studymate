@@ -9,6 +9,22 @@ if (typeof window !== "undefined") {
     window.GIF = GIF;
 }
 
+const originalParseColor = window.html2canvas.Rendering.CanvasRenderer.prototype.parseColor;
+
+window.html2canvas.Rendering.CanvasRenderer.prototype.parseColor = function (color) {
+    try {
+        // If OKLCH detected → force RGB fallback
+        if (typeof color === "string" && color.startsWith("oklch")) {
+            console.log(color);
+            return { r: 0, g: 0, b: 0, a: 1 }; // fallback to black
+        }
+        return originalParseColor.call(this, color);
+    } catch (e) {
+        // swallow parser errors
+        return { r: 0, g: 0, b: 0, a: 1 };
+    }
+};
+
 // --- CSS (GlobalStyles Component) ---
 const GlobalStyles = () => (
     <style>{`
@@ -320,8 +336,8 @@ const HeapVisualizer = ({ name, heap }) => {
                     <div
                         key={`${item}-${index}`}
                         className={`border ${index === 0
-                                ? 'border-yellow-400 bg-yellow-100 text-yellow-900 font-bold'
-                                : 'border-gray-600 bg-gray-700 text-white'
+                            ? 'border-yellow-400 bg-yellow-100 text-yellow-900 font-bold'
+                            : 'border-gray-600 bg-gray-700 text-white'
                             } px-3 py-2 rounded text-xs text-center font-medium flex-shrink-0`}
                     >
                         {String(item)}
