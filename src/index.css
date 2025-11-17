@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+.safe-item {
+  height: 28px;
+  line-height: 28px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+}

@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import html2canvas from "html2canvas";
 import GIF from "gif.js.optimized";
+import { oklabToRgb, oklchToRgb } from "./utils";
 
 if (typeof window !== "undefined") {
     window.html2canvas = html2canvas;
@@ -517,9 +518,17 @@ const VariableDisplay = ({ variables, variableMap }) => {
                     return (
                         <div key={name} className="mb-4">
                             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
+                            <div className="flex flex-wrap mt-2">
                                 {value.map((item, index) => (
-                                    <div key={`${item}-${index}`} className="border border-blue-400 bg-blue-100 text-blue-900 px-3 py-1 rounded text-xs min-w-[30px] text-center font-medium">
+                                    <div
+                                        className="border border-blue-400 bg-blue-100 text-blue-900 rounded text-xs font-medium mr-1 mb-1 flex items-center justify-center"
+                                        style={{
+                                            height: "28px",         // same as h-7 (1.75rem = 28px)
+                                            lineHeight: "28px",     // forces perfect vertical centering
+                                            padding: "0 8px",       // horizontal padding only
+                                            minWidth: "32px",
+                                        }}
+                                    >
                                         {String(item)}
                                     </div>
                                 ))}
@@ -936,28 +945,23 @@ export default function Python() {
                     all.forEach((el) => {
                         const style = doc.defaultView.getComputedStyle(el);
 
-                        const fix = (prop) => {
-                            const value = style[prop];
-                            if (!value) return null;
+                        const convert = (prop) => {
+                            const v = style[prop];
+                            if (!v) return null;
 
-                            if (
-                                value.startsWith("oklch") ||
-                                value.startsWith("oklab") ||
-                                value.startsWith("OKLAB") ||
-                                value.startsWith("OKLCH")
-                            ) {
-                                return "rgb(17, 24, 39)"; // safe fallback
-                            }
+                            if (/^oklch/i.test(v)) return oklchToRgb(v);
+                            if (/^oklab/i.test(v)) return oklabToRgb(v);
+
                             return null;
                         };
 
-                        const bg = fix("backgroundColor");
-                        const border = fix("borderColor");
-                        const text = fix("color");
+                        const bg = convert("backgroundColor");
+                        const border = convert("borderColor");
+                        const text = convert("color");
 
                         if (bg) el.style.backgroundColor = bg;
-                        if (border) el.style.borderColor = "rgb(55,65,81)";
-                        if (text) el.style.color = "#fff";
+                        if (border) el.style.borderColor = border;
+                        if (text) el.style.color = text;
                     });
                 }
 
@@ -1191,7 +1195,7 @@ export default function Python() {
                         {/* --- FIXED: Ref is now on this div --- */}
                         <div
                             ref={visualizerRef}
-                            className="state-section bg-gray-900 rounded-lg"
+                            className="state-section bg-gray-900 rounded-lg h-60"
                             style={{
                                 backgroundColor: "rgb(17,24,39)",
                             }}
@@ -1245,7 +1249,7 @@ export default function Python() {
                     </div>
 
                     {/* --- NEW: Export Buttons (Appear when finished) --- */}
-                    {isFinished && !isExporting && (
+                    {!isExporting && (
                         <div className="flex gap-2 mt-4">
                             <button
                                 onClick={handleExportPNG}
@@ -1254,13 +1258,15 @@ export default function Python() {
                                 <DownloadIcon />
                                 Export PNG (Current Step)
                             </button>
-                            <button
-                                onClick={handleExportGIF}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 rounded-lg font-semibold hover:bg-blue-500 transition"
-                            >
-                                <GifIcon />
-                                Export GIF (Animation)
-                            </button>
+                            {isFinished && (
+                                <button
+                                    onClick={handleExportGIF}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 rounded-lg font-semibold hover:bg-blue-500 transition"
+                                >
+                                    <GifIcon />
+                                    Export GIF (Animation)
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
