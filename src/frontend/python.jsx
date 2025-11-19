@@ -154,7 +154,7 @@ const GraphVisualizer = ({ name, graphData, variables }) => {
     return (
         <div className="mb-4">
             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-            <svg className="graph-svg w-full h-[300px] border border-gray-700 rounded bg-gray-900 mt-1" viewBox="0 0 600 300">
+            <svg className="graph-svg w-full" style={{ height: "auto", minHeight: "200px" }}>
                 {edges.map(edge => (<line key={edge.id} className="graph-edge" x1={nodePositions[edge.source]?.x} y1={nodePositions[edge.source]?.y} x2={nodePositions[edge.target]?.x} y2={nodePositions[edge.target]?.y} />))}
                 {nodes.map(node => (<g key={node.id} className="graph-node"><circle cx={node.x} cy={node.y} r="22" fill={getNodeFill(node.id)} stroke="#38bdf8" strokeWidth="2" /><text x={node.x} y={node.y} >{node.id}</text> </g>))}
             </svg>
@@ -180,7 +180,7 @@ const StackVisualizer = ({ name, stack }) => {
         <div className="mb-4">
             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
             {/* Base of the stack */}
-            <div className="flex flex-col-reverse items-center justify-start mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[150px] max-h-48 overflow-auto scrollbar-hide">
+            <div className="p-2 border border-gray-700 rounded-lg bg-gray-900 overflow-visible">
                 <span className="text-xs text-gray-500 mt-1">Bottom</span>
                 {stackItems.length === 0 && (
                     <div className="flex-1 flex items-center justify-center">
@@ -220,7 +220,7 @@ const QueueVisualizer = ({ name, queue }) => {
     return (
         <div className="mb-4">
             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-            <div className="flex items-center gap-2 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[56px] max-w-full overflow-x-auto scrollbar-hide">
+            <div className="overflow-visible">
                 <span className="text-xs text-gray-500 mr-2 flex-shrink-0">Front</span>
                 {queueItems.length === 0 && (
                     <div className="flex-1 flex items-center justify-center">
@@ -470,7 +470,7 @@ const BinaryTreeVisualizer = ({ name, root }) => {
     return (
         <div className="mb-4">
             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-            <div className="mt-1 border border-gray-700 rounded-lg bg-gray-900 p-4 max-w-full overflow-x-auto scrollbar-hide">
+            <div className="p-4 border border-gray-700 rounded-lg bg-gray-900 overflow-visible">
                 {/* --- FIX: Check for root.key --- */}
                 {(!root || (root.key === undefined)) ? (
                     <span className="text-gray-500 text-xs italic">Tree is empty</span>
@@ -990,46 +990,48 @@ export default function Python() {
     const originalStep = currentStep;
     const panel = visualizerRef.current;
 
-    // 🔥 Freeze layout for consistent frames
-    const originalHeight = panel.offsetHeight;
+    // 🟦 NEW FIX: First pass → measure max height of all frames
+    let maxHeight = panel.offsetHeight;
+    for (let i = 0; i < trace.length; i++) {
+        setCurrentStep(i);
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        maxHeight = Math.max(maxHeight, panel.scrollHeight, panel.offsetHeight);
+    }
+
+    // 🟩 Freeze layout to the tallest frame → prevents clipping
+    const originalHeight = panel.style.height;
     const originalOverflow = panel.style.overflow;
-    panel.style.height = `${originalHeight}px`;
+    panel.style.height = `${maxHeight}px`;
     panel.style.overflow = "hidden";
 
     const gif = new window.GIF({
         workers: 2,
         quality: 10,
         width: panel.offsetWidth,
-        height: panel.offsetHeight,
+        height: maxHeight,        // <-- FIXED HEIGHT HERE
         workerScript: '/gif.worker.js'
     });
 
+    // 🟧 Second pass → render frames
     for (let i = 0; i < trace.length; i++) {
         setIsExporting(`GIF... ${Math.round((i / trace.length) * 100)}%`);
-
         setCurrentStep(i);
 
-        // Wait for UI update BEFORE screenshot
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
         const canvas = await window.html2canvas(panel, {
             useCORS: true,
-            backgroundColor: '#111827',
+            backgroundColor: "#111827",
             onclone: (doc) => {
                 const all = doc.querySelectorAll("*");
-
                 all.forEach((el) => {
                     const style = doc.defaultView.getComputedStyle(el);
 
                     const fix = (prop) => {
                         const value = style[prop];
                         if (!value) return null;
-                        if (
-                            value.startsWith("oklch") ||
-                            value.startsWith("oklab") ||
-                            value.startsWith("OKLAB")
-                        ) {
-                            return "rgb(17, 24, 39)";
+                        if (value.startsWith("oklch") || value.startsWith("oklab") || value.startsWith("OKLAB")) {
+                            return "rgb(17,24,39)";
                         }
                         return null;
                     };
@@ -1048,13 +1050,13 @@ export default function Python() {
         gif.addFrame(canvas, { copy: true, delay: autoplaySpeed });
     }
 
-    gif.on('finished', (blob) => {
-        triggerDownload(URL.createObjectURL(blob), 'decipher-visualization.gif');
+    gif.on("finished", (blob) => {
+        triggerDownload(URL.createObjectURL(blob), "decipher-visualization.gif");
         setIsExporting(null);
         setCurrentStep(originalStep);
 
-        // Restore layout
-        panel.style.height = "";
+        // Restore original layout
+        panel.style.height = originalHeight;
         panel.style.overflow = originalOverflow;
     });
 
@@ -1197,7 +1199,7 @@ export default function Python() {
                     {error && <div className="p-3 mb-3 bg-red-900/50 text-red-300 border border-red-700 rounded-lg text-sm"><strong>Error:</strong> {error}</div>}
 
                     {/* --- Panel Content (Wrapped in Ref) --- */}
-                    <div className="flex-1 flex flex-col overflow-auto scrollbar-hide space-y-4 bg-gray-900/0">
+                    <div className="flex-1 flex flex-col overflow-visible space-y-4 bg-gray-900/0">
                         {/* --- FIXED: Ref is now on this div --- */}
                         <div
                             ref={visualizerRef}
@@ -1251,7 +1253,7 @@ export default function Python() {
 
                         <div className="flex-shrink-0">
                             <h2 className="text-lg font-semibold mb-2 text-gray-200">Output (Print Statements)</h2>
-                            <div className="output-panel h-24 bg-gray-900 border border-gray-700 text-gray-300 rounded-lg p-3 text-xs font-mono overflow-auto scrollbar-hide whitespace-pre-wrap">
+                            <div className="output-panel bg-gray-900 border border-gray-700 text-gray-300 rounded-lg p-3 text-xs font-mono overflow-visible whitespace-pre-wrap">
                                 {currentOutput || (Array.isArray(trace) && trace.length > 0 ? '(No output for this step)' : 'Output will appear here...')}
                             </div>
                         </div>
