@@ -979,84 +979,89 @@ export default function Python() {
 
     // Export the *entire animation* as a GIF
     const handleExportGIF = async () => {
-        if (!visualizerRef.current || !trace.length || typeof window.GIF === 'undefined' || typeof window.html2canvas === 'undefined') {
-            setError("GIF export libraries are not loaded.");
-            return;
-        }
+    if (!visualizerRef.current || !trace.length || typeof window.GIF === 'undefined' || typeof window.html2canvas === 'undefined') {
+        setError("GIF export libraries are not loaded.");
+        return;
+    }
 
-        setIsPlaying(false);
-        setIsExporting("GIF... 0%");
+    setIsPlaying(false);
+    setIsExporting("GIF... 0%");
 
-        const originalStep = currentStep;
-        const panel = visualizerRef.current;
+    const originalStep = currentStep;
+    const panel = visualizerRef.current;
 
-        const gif = new window.GIF({
-            workers: 2,
-            quality: 10,
-            width: panel.offsetWidth,
-            height: panel.offsetHeight,
-            workerScript: '/gif.worker.js'
+    // 🔥 Freeze layout for consistent frames
+    const originalHeight = panel.offsetHeight;
+    const originalOverflow = panel.style.overflow;
+    panel.style.height = `${originalHeight}px`;
+    panel.style.overflow = "hidden";
+
+    const gif = new window.GIF({
+        workers: 2,
+        quality: 10,
+        width: panel.offsetWidth,
+        height: panel.offsetHeight,
+        workerScript: '/gif.worker.js'
+    });
+
+    for (let i = 0; i < trace.length; i++) {
+        setIsExporting(`GIF... ${Math.round((i / trace.length) * 100)}%`);
+
+        setCurrentStep(i);
+
+        // Wait for UI update BEFORE screenshot
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+        const canvas = await window.html2canvas(panel, {
+            useCORS: true,
+            backgroundColor: '#111827',
+            onclone: (doc) => {
+                const all = doc.querySelectorAll("*");
+
+                all.forEach((el) => {
+                    const style = doc.defaultView.getComputedStyle(el);
+
+                    const fix = (prop) => {
+                        const value = style[prop];
+                        if (!value) return null;
+                        if (
+                            value.startsWith("oklch") ||
+                            value.startsWith("oklab") ||
+                            value.startsWith("OKLAB")
+                        ) {
+                            return "rgb(17, 24, 39)";
+                        }
+                        return null;
+                    };
+
+                    const bg = fix("backgroundColor");
+                    const border = fix("borderColor");
+                    const text = fix("color");
+
+                    if (bg) el.style.backgroundColor = bg;
+                    if (border) el.style.borderColor = "rgb(55,65,81)";
+                    if (text) el.style.color = "#fff";
+                });
+            }
         });
 
-        for (let i = 0; i < trace.length; i++) {
-            setIsExporting(`GIF... ${Math.round((i / trace.length) * 100)}%`);
+        gif.addFrame(canvas, { copy: true, delay: autoplaySpeed });
+    }
 
-            setCurrentStep(i);
-            await new Promise(resolve => setTimeout(resolve, 50));
+    gif.on('finished', (blob) => {
+        triggerDownload(URL.createObjectURL(blob), 'decipher-visualization.gif');
+        setIsExporting(null);
+        setCurrentStep(originalStep);
 
-            const canvas = await window.html2canvas(panel, {
-                useCORS: true,
-                backgroundColor: '#111827',
+        // Restore layout
+        panel.style.height = "";
+        panel.style.overflow = originalOverflow;
+    });
 
-                // 💥 THE FIX: remove ALL OKLCH colors before rendering
-                onclone: (doc) => {
-                    const all = doc.querySelectorAll("*");
+    setIsExporting("Compiling GIF...");
+    gif.render();
+};
 
-                    all.forEach((el) => {
-                        const style = doc.defaultView.getComputedStyle(el);
-
-                        const fix = (prop) => {
-                            const value = style[prop];
-                            if (!value) return null;
-
-                            if (
-                                value.startsWith("oklch") ||
-                                value.startsWith("oklab") ||
-                                value.startsWith("OKLAB") ||
-                                value.startsWith("OKLCH")
-                            ) {
-                                return "rgb(17, 24, 39)"; // safe fallback
-                            }
-                            return null;
-                        };
-
-                        const bg = fix("backgroundColor");
-                        const border = fix("borderColor");
-                        const text = fix("color");
-
-                        if (bg) el.style.backgroundColor = bg;
-                        if (border) el.style.borderColor = "rgb(55,65,81)";
-                        if (text) el.style.color = "#fff";
-                    });
-                }
-
-            });
-
-            gif.addFrame(canvas, {
-                copy: true,
-                delay: autoplaySpeed
-            });
-        }
-
-        gif.on('finished', (blob) => {
-            triggerDownload(URL.createObjectURL(blob), 'decipher-visualization.gif');
-            setIsExporting(null);
-            setCurrentStep(originalStep);
-        });
-
-        setIsExporting("Compiling GIF...");
-        gif.render();
-    };
 
 
     // --- Resizing Logic ---
