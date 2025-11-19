@@ -1196,13 +1196,16 @@ export default function Python() {
                         {/* --- FIXED: Ref is now on this div --- */}
                         <div
                             ref={visualizerRef}
-                            className="state-section bg-gray-900 rounded-lg h-60"
+                            className="state-section bg-gray-900 rounded-lg"
                             style={{
-                                backgroundColor: "rgb(17,24,39)",
-                            }}
-                        >
+                            backgroundColor: "rgb(17,24,39)",
+                            height: "auto",
+                            minHeight: "150px",     // keeps panel visible even when empty
+                    }}
+>
+
                             <h2 className="text-lg font-semibold mb-2 text-gray-200 flex-shrink-0 px-3 pt-3">Execution State</h2>
-                            <div className="state-display p-3 text-sm overflow-auto scrollbar-hide min-h-[100px]">
+                            <div className="state-display p-3 text-sm scrollbar-hide" style={{ height: "auto" }}>
                                 {Array.isArray(trace) && trace.length > 0 && currentStepData ? (
                                     <StateVisualizer
                                         variables={currentStepData.variables || {}}
