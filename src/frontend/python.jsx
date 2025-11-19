@@ -738,8 +738,7 @@ export default function Python() {
     const [editorWidth, setEditorWidth] = useState(50);
     const containerRef = useRef(null);
     const isResizing = useRef(false);
-    // Add near other state definitions
-    const [maxContentHeight, setMaxContentHeight] = useState(0);
+
     // --- REFINED: Ref for the visualizer panel ---
     const visualizerRef = useRef(null);
 
@@ -979,61 +978,32 @@ export default function Python() {
     };
 
     // Export the *entire animation* as a GIF
-   // --- Inside handleExportGIF (The Fix) ---
-const handleExportGIF = async () => {
-    // ... (Initial checks remain the same) ...
-    
+    const handleExportGIF = async () => {
+    if (!visualizerRef.current || !trace.length || typeof window.GIF === 'undefined' || typeof window.html2canvas === 'undefined') {
+        setError("GIF export libraries are not loaded.");
+        return;
+    }
+
     setIsPlaying(false);
     setIsExporting("GIF... 0%");
 
     const originalStep = currentStep;
     const panel = visualizerRef.current;
-    
-    // 1. --- PASS 1: FIND MAX HEIGHT ---
-    let maxHeight = 0;
-    
-    // Temporarily switch the panel to allow content expansion
-    panel.style.height = "auto";
-    panel.style.overflow = "visible";
 
-    for (let i = 0; i < trace.length; i++) {
-        // Render the step's content (StateVisualizer updates)
-        setCurrentStep(i);
-        
-        // Wait for React to render the new content
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-        // Get the height of the content
-        const currentContentHeight = panel.scrollHeight;
-        maxHeight = Math.max(maxHeight, currentContentHeight);
-    }
-    
-    // Set the max height for consistent capture
-    // Add some padding to be safe (e.g., 20px)
-    maxHeight += 20;
-
-    // 2. --- PASS 2: CAPTURE FRAMES ---
-    
-    // 🔥 Freeze layout with the maximum required height
-    panel.style.height = `${maxHeight}px`;
+    // 🔥 Freeze layout for consistent frames
+    const originalHeight = panel.offsetHeight;
+    const originalOverflow = panel.style.overflow;
+    panel.style.height = `${originalHeight}px`;
     panel.style.overflow = "hidden";
-    
-    // Reset to the start for capture
-    setCurrentStep(0);
-    
-    // Wait for the reset to render
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-    // Create the GIF instance now that we have the final dimensions
     const gif = new window.GIF({
         workers: 2,
         quality: 10,
         width: panel.offsetWidth,
-        height: maxHeight, // Use maxHeight here
+        height: panel.offsetHeight,
         workerScript: '/gif.worker.js'
     });
-    
-    // ... (The rest of the loop for capturing frames remains largely the same)
+
     for (let i = 0; i < trace.length; i++) {
         setIsExporting(`GIF... ${Math.round((i / trace.length) * 100)}%`);
 
@@ -1043,14 +1013,51 @@ const handleExportGIF = async () => {
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
         const canvas = await window.html2canvas(panel, {
-            // ... (options remain the same) ...
+            useCORS: true,
+            backgroundColor: '#111827',
+            onclone: (doc) => {
+                const all = doc.querySelectorAll("*");
+
+                all.forEach((el) => {
+                    const style = doc.defaultView.getComputedStyle(el);
+
+                    const fix = (prop) => {
+                        const value = style[prop];
+                        if (!value) return null;
+                        if (
+                            value.startsWith("oklch") ||
+                            value.startsWith("oklab") ||
+                            value.startsWith("OKLAB")
+                        ) {
+                            return "rgb(17, 24, 39)";
+                        }
+                        return null;
+                    };
+
+                    const bg = fix("backgroundColor");
+                    const border = fix("borderColor");
+                    const text = fix("color");
+
+                    if (bg) el.style.backgroundColor = bg;
+                    if (border) el.style.borderColor = "rgb(55,65,81)";
+                    if (text) el.style.color = "#fff";
+                });
+            }
         });
 
         gif.addFrame(canvas, { copy: true, delay: autoplaySpeed });
     }
-    
-    // ... (gif.on('finished', ...) remains the same) ...
-    
+
+    gif.on('finished', (blob) => {
+        triggerDownload(URL.createObjectURL(blob), 'decipher-visualization.gif');
+        setIsExporting(null);
+        setCurrentStep(originalStep);
+
+        // Restore layout
+        panel.style.height = "";
+        panel.style.overflow = originalOverflow;
+    });
+
     setIsExporting("Compiling GIF...");
     gif.render();
 };
