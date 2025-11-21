@@ -11,7 +11,6 @@ const Codepage = () => {
   const navigate = useNavigate();
   const userId = localStorage.getItem("userId");
 
-  // 🟢 Fetch history from backend
   useEffect(() => {
     const fetchHistory = async () => {
       if (!userId) {
