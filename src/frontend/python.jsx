@@ -10,7 +10,6 @@ if (typeof window !== "undefined") {
     window.GIF = GIF;
 }
 
-// --- CSS (GlobalStyles Component) ---
 const GlobalStyles = () => (
     <style>{`
     /* Minimal base styles - Tailwind handles the rest */
@@ -154,7 +153,7 @@ const GraphVisualizer = ({ name, graphData, variables }) => {
     return (
         <div className="mb-4">
             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-            <svg className="graph-svg w-full" style={{ height: "auto", minHeight: "200px" }}>
+            <svg className="graph-svg w-full h-[300px] border border-gray-700 rounded bg-gray-900 mt-1" viewBox="0 0 600 300">
                 {edges.map(edge => (<line key={edge.id} className="graph-edge" x1={nodePositions[edge.source]?.x} y1={nodePositions[edge.source]?.y} x2={nodePositions[edge.target]?.x} y2={nodePositions[edge.target]?.y} />))}
                 {nodes.map(node => (<g key={node.id} className="graph-node"><circle cx={node.x} cy={node.y} r="22" fill={getNodeFill(node.id)} stroke="#38bdf8" strokeWidth="2" /><text x={node.x} y={node.y} >{node.id}</text> </g>))}
             </svg>
@@ -164,40 +163,47 @@ const GraphVisualizer = ({ name, graphData, variables }) => {
 
 // --- StackVisualizer Component (UPGRADED) ---
 const StackVisualizer = ({ name, stack }) => {
-    // --- THIS IS THE FIX ---
-    // The 'stack' prop could be a simple array [1, 2]
-    // OR our serialized custom class { "__type__": "Stack", "items": [1, 2] }
-    // We check for the .items property and use that if it exists.
+    // Smart Data Finder
     let stackItems = [];
     if (Array.isArray(stack)) {
-        stackItems = stack; // It's a simple list
-    } else if (stack && stack.items && Array.isArray(stack.items)) {
-        stackItems = stack.items; // It's our custom Stack class!
+        stackItems = stack;
+    } else if (stack && typeof stack === 'object') {
+        // Look for 'items', 'stack', 'data', or ANY array property
+        if (Array.isArray(stack.items)) stackItems = stack.items;
+        else if (Array.isArray(stack.stack)) stackItems = stack.stack; // Matches your self.stack
+        else if (Array.isArray(stack.data)) stackItems = stack.data;
+        else {
+            // Fallback: Find the first array property in the object
+            const firstArray = Object.values(stack).find(val => Array.isArray(val));
+            if (firstArray) stackItems = firstArray;
+        }
     }
-    // --- END OF FIX ---
 
     return (
         <div className="mb-4">
-            <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-            {/* Base of the stack */}
-            <div className="p-2 border border-gray-700 rounded-lg bg-gray-900 overflow-visible">
-                <span className="text-xs text-gray-500 mt-1">Bottom</span>
+            <div className="flex justify-between items-end mb-1">
+                <span className="font-semibold font-mono text-sm text-gray-300">{name}</span>
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Stack</span>
+            </div>
+
+            <div className="flex flex-col-reverse items-center justify-start border border-gray-700 rounded-lg bg-gray-900/50 p-2 min-h-[150px] max-h-64 overflow-auto scrollbar-hide relative">
                 {stackItems.length === 0 && (
-                    <div className="flex-1 flex items-center justify-center">
-                        <span className="text-gray-500 text-xs italic">Stack is empty</span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-gray-600 text-xs italic">Empty</span>
                     </div>
                 )}
-                {/* Use stackItems here */}
                 {stackItems.map((item, index) => (
                     <div
                         key={`${item}-${index}`}
-                        className={`flex items-center justify-center w-3/4 px-3 py-1 my-0.5 border border-purple-400 bg-purple-100 text-purple-900 rounded text-xs font-medium shadow ${index === stackItems.length - 1 ? 'font-bold' : ''}`}
+                        className={`flex items-center justify-center w-3/4 px-3 py-2 my-0.5 border border-yellow-500 bg-yellow-200/90 text-yellow-900 rounded text-xs font-bold shadow-sm transition-all hover:scale-105 ${index === stackItems.length - 1 ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-gray-900' : ''}`}
                     >
                         {String(item)}
                     </div>
                 ))}
-                {/* And use stackItems here */}
-                {stackItems.length > 0 && <span className="text-xs text-gray-500 mb-1">Top</span>}
+                <div className="w-full flex justify-between px-4 text-[9px] text-gray-500 font-mono mt-auto pt-2 border-t border-gray-800/50">
+                    <span>BOTTOM</span>
+                    {stackItems.length > 0 && <span>TOP</span>}
+                </div>
             </div>
         </div>
     );
@@ -205,38 +211,61 @@ const StackVisualizer = ({ name, stack }) => {
 
 // --- QueueVisualizer Component (UPGRADED) ---
 const QueueVisualizer = ({ name, queue }) => {
-    // --- THIS IS THE FIX ---
-    // The 'queue' prop could be a simple array [A, B] (from a deque)
-    // OR our serialized custom class { "__type__": "Queue", "items": [A, B] }
-    // We check for the .items property and use that if it exists.
+    // --- SMART DATA FINDER (The Fix) ---
     let queueItems = [];
+
     if (Array.isArray(queue)) {
-        queueItems = queue; // It's a simple list (like from a deque)
-    } else if (queue && queue.items && Array.isArray(queue.items)) {
-        queueItems = queue.items; // It's our custom Queue class!
+        // Case 1: It's just a plain list
+        queueItems = queue;
+    } else if (queue && typeof queue === 'object') {
+        // Case 2: It's a custom Queue object. Let's find the data!
+
+        // Check specific property names
+        if (Array.isArray(queue.queue)) queueItems = queue.queue;       // Matches self.queue
+        else if (Array.isArray(queue.items)) queueItems = queue.items;  // Matches self.items
+        else if (Array.isArray(queue.data)) queueItems = queue.data;    // Matches self.data
+        else {
+            // Fallback: Find the first property that is an array
+            const firstArray = Object.values(queue).find(val => Array.isArray(val));
+            if (firstArray) queueItems = firstArray;
+        }
     }
-    // --- END OF FIX ---
+
+    // Helper to display objects cleanly (e.g., Nodes)
+    const renderItem = (item) => {
+        if (typeof item === 'object' && item !== null) {
+            return item.val || item.data || item.value || "{Obj}";
+        }
+        return String(item);
+    };
 
     return (
         <div className="mb-4">
-            <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-            <div className="overflow-visible">
-                <span className="text-xs text-gray-500 mr-2 flex-shrink-0">Front</span>
+            <div className="flex justify-between items-end mb-1">
+                <span className="font-semibold font-mono text-sm text-gray-300">{name}</span>
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Queue</span>
+            </div>
+
+            <div className="relative flex items-center border border-gray-700 rounded-lg bg-gray-900/50 p-3 overflow-x-auto min-h-[80px] scrollbar-hide">
                 {queueItems.length === 0 && (
-                    <div className="flex-1 flex items-center justify-center">
-                        <span className="text-gray-500 text-xs italic">Queue is empty</span>
+                    <div className="w-full text-center">
+                        <span className="text-gray-600 text-xs italic">Empty</span>
                     </div>
                 )}
-                {/* Use queueItems here */}
-                {queueItems.map((item, index) => (
-                    <div
-                        key={`${item}-${index}`}
-                        className="border border-green-400 bg-green-100 text-green-900 px-3 py-2 rounded text-xs text-center font-medium flex-shrink-0"
-                    >
-                        {String(item)}
+
+                {queueItems.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <div className="text-[9px] text-gray-500 font-mono uppercase mr-1 self-end mb-2">Front</div>
+
+                        {queueItems.map((val, i) => (
+                            <div key={i} className="min-w-[40px] h-10 bg-green-200 text-green-900 flex items-center justify-center rounded text-xs font-bold border border-green-500 shadow-sm whitespace-nowrap px-2">
+                                {renderItem(val)}
+                            </div>
+                        ))}
+
+                        <div className="text-[9px] text-gray-500 font-mono uppercase ml-1 self-end mb-2">Back</div>
                     </div>
-                ))}
-                <span className="text-xs text-gray-500 ml-auto flex-shrink-0">Back</span>
+                )}
             </div>
         </div>
     );
@@ -304,12 +333,30 @@ const SetVisualizer = ({ name, set }) => {
 
 
 // --- Heap (Priority Queue) Visualizer ---
+// --- Heap (Priority Queue) Visualizer (UPGRADED) ---
 const HeapVisualizer = ({ name, heap }) => {
-    const items = Array.isArray(heap) ? heap : [];
+    // --- SMART DATA FINDER ---
+    let items = [];
+
+    if (Array.isArray(heap)) {
+        // Case 1: It's a raw list (e.g., h = [1, 2, 3])
+        items = heap;
+    } else if (heap && typeof heap === 'object') {
+        // Case 2: It's a class (e.g., MinHeap). Let's find the array!
+        if (Array.isArray(heap.heap)) items = heap.heap;      // Matches self.heap
+        else if (Array.isArray(heap.data)) items = heap.data; // Matches self.data
+        else if (Array.isArray(heap.items)) items = heap.items;
+        else if (Array.isArray(heap._data)) items = heap._data;
+        else {
+            // Fallback: Find the first array property we can
+            const firstArray = Object.values(heap).find(val => Array.isArray(val));
+            if (firstArray) items = firstArray;
+        }
+    }
 
     return (
         <div className="mb-4">
-            <span className="font-semibold font-mono text-sm text-gray-300">{name} = heap[]</span>
+            <span className="font-semibold font-mono text-sm text-gray-300">{name}</span>
             <div className="flex items-center gap-2 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[56px] max-w-full overflow-x-auto scrollbar-hide">
                 <span className="text-xs text-gray-500 mr-2 flex-shrink-0">Root (Min)</span>
                 {items.length === 0 && (
@@ -335,28 +382,42 @@ const HeapVisualizer = ({ name, heap }) => {
 
 
 // --- LinkedList Visualizer ---
+// --- LinkedList / Queue Visualizer (Final Robust Version) ---
 const LinkedListVisualizer = ({ name, list }) => {
-    // Helper function to recursively parse the linked list
+
+    // 1. Smart Pointer Finders
+    const getHeadNode = (obj) => {
+        if (!obj) return null;
+        return obj.head || obj.top || obj.front || obj.start || obj.first;
+    };
+
+    const hasRearPointer = (obj) => {
+        if (!obj) return false;
+        // Check if a rear/tail property exists and is not null
+        return (obj.rear || obj.tail || obj.back || obj.last) !== undefined;
+    };
+
+    // 2. Smart Value Finder (Same as before)
+    const getNodeValue = (node) => {
+        if (typeof node !== 'object' || node === null) return "?";
+        if (node.data !== undefined) return node.data;
+        if (node.value !== undefined) return node.value;
+        if (node.val !== undefined) return node.val;
+        if (node.item !== undefined) return node.item;
+        return "?";
+    };
+
+    // 3. Parsing Logic
     const parseList = (node) => {
-        if (!node || typeof node !== 'object' || node === null) {
-            return null; // End of list
-        }
-
-        if (typeof node === 'string' && node.includes('Circular reference')) {
-            return { data: '...', next: null };
-        }
-
-        // --- FIX: Use .data (or .key for the tree) ---
-        const data = node.data; // Changed from node.key
-        const nextNode = node.next;
+        if (!node || typeof node !== 'object' || node === null) return null;
+        if (typeof node === 'string' && node.includes('Circular')) return { data: '...', next: null };
 
         return {
-            data: data,
-            next: parseList(nextNode) // Recurse
+            data: getNodeValue(node),
+            next: parseList(node.next)
         };
     };
 
-    // Helper function to build the nodes array from the parsed list
     const buildNodes = (head) => {
         const nodes = [];
         let current = head;
@@ -367,19 +428,18 @@ const LinkedListVisualizer = ({ name, list }) => {
         return nodes;
     };
 
-    // Start parsing from the head
-    // Check if the list object itself and its head exist
-    const headNode = (list && list.head) ? parseList(list.head) : null;
+    const rawHead = getHeadNode(list);
+    const headNode = rawHead ? parseList(rawHead) : null;
     const nodes = headNode ? buildNodes(headNode) : [];
+    const showRear = hasRearPointer(list) && nodes.length > 0;
 
-    // Handle case where list exists but head is null
-    if (list && !list.head) {
+    // Empty State
+    if (list && !rawHead) {
         return (
             <div className="mb-4">
                 <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-                <div className="flex items-center gap-1 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[56px] max-w-full overflow-x-auto scrollbar-hide">
-                    <span className="text-xs text-gray-500 mr-2 flex-shrink-0">Head</span>
-                    <span className="text-gray-500 text-xs ml-1 flex-shrink-0">None</span>
+                <div className="mt-1 p-2 border border-gray-700 rounded-lg bg-gray-900/50 text-center">
+                    <span className="text-gray-500 text-xs italic">Empty (Front is None)</span>
                 </div>
             </div>
         );
@@ -388,35 +448,49 @@ const LinkedListVisualizer = ({ name, list }) => {
     return (
         <div className="mb-4">
             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-            <div className="flex items-center gap-1 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-2 min-h-[56px] max-w-full overflow-x-auto scrollbar-hide">
-                <span className="text-xs text-gray-500 mr-2 flex-shrink-0">Head</span>
-                {nodes.length === 0 && (
-                    <div className="flex-1 flex items-center justify-center">
-                        <span className="text-gray-500 text-xs italic">Linked List is empty</span>
-                    </div>
-                )}
+
+            {/* Scrollable Container */}
+            <div className="flex items-start gap-1 mt-1 border border-gray-700 rounded-lg bg-gray-900 p-4 min-h-[80px] max-w-full overflow-x-auto scrollbar-hide">
 
                 {nodes.map((data, index) => (
                     <React.Fragment key={index}>
-                        {/* Node */}
-                        <div
-                            className="border border-sky-400 bg-sky-100 text-sky-900 px-3 py-2 rounded text-xs text-center font-medium flex-shrink-0"
-                        >
-                            {String(data)}
+                        {/* NODE CONTAINER */}
+                        <div className="relative flex flex-col items-center">
+
+                            {/* FRONT POINTER (Index 0) */}
+                            {index === 0 && (
+                                <div className="absolute -top-6 flex flex-col items-center animate-bounce">
+                                    <span className="text-[9px] font-bold text-green-400 uppercase tracking-wider">Front</span>
+                                    <span className="text-green-400 leading-none">↓</span>
+                                </div>
+                            )}
+
+                            {/* REAR POINTER (Last Index) */}
+                            {showRear && index === nodes.length - 1 && (
+                                <div className="absolute -bottom-6 flex flex-col-reverse items-center">
+                                    <span className="text-[9px] font-bold text-purple-400 uppercase tracking-wider">Rear</span>
+                                    <span className="text-purple-400 leading-none">↑</span>
+                                </div>
+                            )}
+
+                            {/* THE NODE BOX */}
+                            <div className={`
+                                relative z-10 border px-3 py-2 rounded text-xs text-center font-medium flex-shrink-0 min-w-[36px]
+                                ${index === 0 ? 'border-green-500 bg-green-900/30 text-green-100' : ''} 
+                                ${showRear && index === nodes.length - 1 ? 'border-purple-500 bg-purple-900/30 text-purple-100' : ''}
+                                ${index !== 0 && (!showRear || index !== nodes.length - 1) ? 'border-sky-500 bg-sky-900/30 text-sky-100' : ''}
+                            `}>
+                                {String(data)}
+                            </div>
+
                         </div>
-                        {/* Arrow */}
+
+                        {/* ARROW */}
                         {index < nodes.length - 1 && (
-                            <span className="text-sky-400 font-mono text-lg flex-shrink-0">→</span>
+                            <span className="text-gray-600 font-mono text-lg flex-shrink-0 pt-1">→</span>
                         )}
                     </React.Fragment>
                 ))}
-
-                {nodes.length > 0 && (
-                    <React.Fragment>
-                        <span className="text-sky-400 font-mono text-lg flex-shrink-0">→</span>
-                        <span className="text-gray-500 text-xs ml-1 flex-shrink-0">None</span>
-                    </React.Fragment>
-                )}
             </div>
         </div>
     );
@@ -424,59 +498,112 @@ const LinkedListVisualizer = ({ name, list }) => {
 
 
 // --- NEW: Binary Tree Visualizer ---
-const BinaryTreeVisualizer = ({ name, root }) => {
+// --- 3. Binary Tree Visualizer (SVG Implementation) ---
 
-    // This is a recursive helper component to render the tree
-    const TreeNode = ({ node }) => {
-        // Base case: If node is null (or not an object), don't render anything
-        if (!node || typeof node !== 'object' || node === null) {
-            return null;
-        }
+// --- 3. Advanced Binary Tree Visualizer ---
 
-        // Check for serialized 'None'
-        if (typeof node === 'string' && node.includes('None')) {
-            return null;
-        }
+const TreeNode = ({ node, x, y, dx, activeValues }) => {
+    // 1. Safety Checks
+    if (!node) return null;
+    if (typeof node === 'string' && node.includes('Circular')) return null;
+    if (typeof node !== 'object') return null;
 
-        // Check for circular reference
-        if (typeof node === 'string' && node.includes('Circular reference')) {
-            return <div className="tree-node-value">...</div>;
-        }
+    // 2. Smart Value Extraction
+    let val = node.val;
+    if (val === undefined) val = node.key; // Support 'key'
+    if (val === undefined) val = node.data;
+    if (val === undefined) val = node.value;
+    if (val === undefined) val = "?";
 
-        // The tracer serializes our Node class with 'key', 'left', 'right'
-        // --- FIX: Use .key (or .data for linked list) ---
-        const { key, left, right } = node;
+    // 3. Check Highlighting
+    // If this node's value matches a variable we are tracking, highlight it!
+    const isHighlighted = activeValues && activeValues.has(String(val));
 
-        const hasChildren = (left && (left.key !== undefined)) || (right && (right.key !== undefined));
+    const left = node.left;
+    const right = node.right;
 
+    // Layout Constants
+    const radius = 20;
+    const verticalGap = 60;
+    const nextDx = Math.max(25, dx * 0.55);
+
+    return (
+        <g>
+            {/* Lines */}
+            {left && <line x1={x} y1={y + radius / 3} x2={x - dx} y2={y + verticalGap - radius / 3} stroke="#4b5563" strokeWidth="2" />}
+            {right && <line x1={x} y1={y + radius / 3} x2={x + dx} y2={y + verticalGap - radius / 3} stroke="#4b5563" strokeWidth="2" />}
+
+            {/* Children */}
+            {left && <TreeNode node={left} x={x - dx} y={y + verticalGap} dx={nextDx} activeValues={activeValues} />}
+            {right && <TreeNode node={right} x={x + dx} y={y + verticalGap} dx={nextDx} activeValues={activeValues} />}
+
+            {/* Node Body */}
+            <circle
+                cx={x} cy={y} r={radius}
+                // Dynamic Fill Color: Orange if highlighted, Green otherwise
+                fill={isHighlighted ? "#f59e0b" : "#10b981"}
+                stroke={isHighlighted ? "#b45309" : "#065f46"}
+                strokeWidth={isHighlighted ? "3" : "2"}
+                className="transition-all duration-300 shadow-lg"
+            />
+            <text
+                x={x} y={y} dy=".3em" textAnchor="middle"
+                className="text-[11px] fill-white font-bold font-mono pointer-events-none select-none"
+            >
+                {String(val).substring(0, 4)}
+            </text>
+        </g>
+    );
+};
+
+const BinaryTreeVisualizer = ({ name, root, variables }) => {
+    // 1. Smart Unwrapping (Fixes the "One Node" issue)
+    // If the object has a .root property (like class BST), use that instead!
+    let actualRoot = root;
+    if (root && typeof root === 'object' && root.root !== undefined) {
+        actualRoot = root.root;
+    }
+
+    // 2. Determine Active Values for Highlighting
+    const activeValues = new Set();
+    if (variables) {
+        // Check common variable names for values
+        ['key', 'x', 'val', 'target', 'search_key', 'item'].forEach(varName => {
+            if (variables[varName] !== undefined) activeValues.add(String(variables[varName]));
+        });
+
+        // Also check if 'root' or 'current' is a node, and highlight its key
+        ['root', 'current', 'node'].forEach(nodeVar => {
+            const nodeObj = variables[nodeVar];
+            if (nodeObj && typeof nodeObj === 'object') {
+                if (nodeObj.val) activeValues.add(String(nodeObj.val));
+                else if (nodeObj.key) activeValues.add(String(nodeObj.key));
+            }
+        });
+    }
+
+    if (!actualRoot || typeof actualRoot !== 'object') {
         return (
-            <div className="tree-node">
-                {/* This node's value */}
-                <div className="tree-node-value" title={`Node(${key})`}>
-                    {String(key)}
+            <div className="mb-4">
+                <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
+                <div className="mt-1 p-2 border border-gray-700 rounded-lg bg-gray-900/50">
+                    <span className="text-gray-500 text-xs italic">Empty / None</span>
                 </div>
-
-                {/* Render this node's children */}
-                {hasChildren && (
-                    <div className="tree-children">
-                        <TreeNode node={left} />
-                        <TreeNode node={right} />
-                    </div>
-                )}
             </div>
         );
-    };
+    }
 
     return (
         <div className="mb-4">
-            <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-            <div className="p-4 border border-gray-700 rounded-lg bg-gray-900 overflow-visible">
-                {/* --- FIX: Check for root.key --- */}
-                {(!root || (root.key === undefined)) ? (
-                    <span className="text-gray-500 text-xs italic">Tree is empty</span>
-                ) : (
-                    <TreeNode node={root} />
-                )}
+            <div className="flex justify-between items-end mb-1">
+                <span className="font-semibold font-mono text-sm text-gray-300">{name}</span>
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Binary Search Tree</span>
+            </div>
+
+            <div className="border border-gray-700 rounded-lg bg-gray-900/50 overflow-auto scrollbar-hide flex justify-center p-4 min-h-[250px] relative">
+                <svg width="800" height="500" viewBox="0 0 800 500" className="min-w-[600px]">
+                    <TreeNode node={actualRoot} x={400} y={40} dx={180} activeValues={activeValues} />
+                </svg>
             </div>
         </div>
     );
@@ -489,16 +616,22 @@ const VariableDisplay = ({ variables, variableMap }) => {
 
     const vizMap = variableMap || {};
 
+    // --- NEW: Helper for Dynamic Colors ---
+    const getHighlightStyle = (index) => {
+        // Priority: j (Red) > i (Yellow) > mid (Green) > pointers (Blue)
+        if (variables['j'] === index) return "bg-red-200 border-red-500 text-red-900";
+        if (variables['j+1'] === index) return "bg-red-200 border-red-500 text-red-900";
+        if (variables['i'] === index) return "bg-yellow-200 border-yellow-500 text-yellow-900";
+        if (variables['mid'] === index) return "bg-green-200 border-green-500 text-green-900";
+        if (variables['pivot'] === index) return "bg-purple-200 border-purple-500 text-purple-900";
+        if (variables['low'] === index) return "bg-cyan-200 border-cyan-500 text-cyan-900";
+        if (variables['high'] === index) return "bg-cyan-200 border-cyan-500 text-cyan-900";
+
+        return "bg-blue-100 border-blue-400 text-blue-900"; // Default Blue
+    };
+
     const specialVarNames = Object.keys(vizMap).filter(name =>
-        vizMap[name] === 'graph' ||
-        vizMap[name] === 'stack' ||
-        vizMap[name] === 'queue' ||
-        vizMap[name] === 'dictionary' ||
-        vizMap[name] === 'set' ||
-        vizMap[name] === 'heap' ||
-        vizMap[name] === 'priority_queue' ||
-        vizMap[name] === 'linked_list' ||
-        vizMap[name] === 'binary_tree' // <-- ADD THIS
+        ['graph', 'stack', 'queue', 'dictionary', 'set', 'heap', 'priority_queue', 'linked_list', 'binary_tree'].includes(vizMap[name])
     );
 
     const internalVars = ['current_node', 'current', 'node', 'neighbors', 'start_node', 'start', 'variable_map'];
@@ -518,19 +651,22 @@ const VariableDisplay = ({ variables, variableMap }) => {
                     return (
                         <div key={name} className="mb-4">
                             <span className="font-semibold font-mono text-sm text-gray-300">{name} =</span>
-                            <div className="flex flex-wrap mt-2">
+                            <div className="flex flex-wrap gap-1 mt-1">
                                 {value.map((item, index) => (
                                     <div
-                                        className="border border-blue-400 bg-blue-100 text-blue-900 rounded text-xs font-medium mr-1 mb-1 flex items-center justify-center"
-                                        style={{
-                                            height: "28px",         // same as h-7 (1.75rem = 28px)
-                                            lineHeight: "28px",     // forces perfect vertical centering
-                                            padding: "0 8px",       // horizontal padding only
-                                            minWidth: "32px",
-                                        }}
-                                        key={index}
+                                        key={`${item}-${index}`}
+                                        // --- UPDATED: Dynamic Class Name ---
+                                        className={`border px-3 py-1 rounded text-xs min-w-[30px] text-center font-medium transition-colors duration-200 ${getHighlightStyle(index)}`}
                                     >
                                         {String(item)}
+
+                                        {/* --- NEW: Pointer Labels --- */}
+                                        {variables['i'] === index && <div className="text-[8px] uppercase font-bold mt-1">i</div>}
+                                        {variables['j'] === index && <div className="text-[8px] uppercase font-bold mt-1">j</div>}
+                                        {variables['mid'] === index && <div className="text-[8px] uppercase font-bold mt-1">mid</div>}
+                                        {variables['low'] === index && <div className="text-[8px] uppercase font-bold mt-1">low</div>}
+                                        {variables['high'] === index && <div className="text-[8px] uppercase font-bold mt-1">high</div>}
+                                        {variables['pivot'] === index && <div className="text-[8px] uppercase font-bold mt-1">piv</div>}
                                     </div>
                                 ))}
                                 {value.length === 0 && <span className="text-gray-500 text-xs italic">(empty list)</span>}
@@ -539,7 +675,7 @@ const VariableDisplay = ({ variables, variableMap }) => {
                     );
                 }
 
-                // Simple Variable Display
+                // Simple Variable Display (Unchanged)
                 if (typeof value !== 'object' || value === null) {
                     return (
                         <div key={name} className="mb-2">
@@ -549,7 +685,7 @@ const VariableDisplay = ({ variables, variableMap }) => {
                     );
                 }
 
-                // Fallback for complex objects that weren't mapped
+                // Fallback for complex objects
                 if (typeof value === 'object' && value !== null && value.__type__) {
                     return (
                         <div key={name} className="mb-2">
@@ -564,6 +700,96 @@ const VariableDisplay = ({ variables, variableMap }) => {
         </div>
     );
 }
+const inferVariableMap = (variables) => {
+    const map = {};
+    for (const [key, value] of Object.entries(variables)) {
+        const name = key.toLowerCase();
+        let type = "";
+
+        // Get Python Class Name if available (e.g., "LinkedStack", "Queue")
+        if (value && typeof value === 'object' && value.__type__) {
+            type = value.__type__.toLowerCase();
+        }
+
+        // --- PRIORITY DETECTION LOGIC ---
+
+        // 1. Graphs (Distinct structure)
+        if (name.includes('graph') || type.includes('graph')) {
+            map[key] = 'graph';
+        }
+        // 2. Linked Lists (CRITICAL: Check this BEFORE Stack/Queue)
+        // This ensures 'LinkedStack' is visualized as a Linked List (Nodes), not a Stack (Array)
+        else if (
+            type.includes('linked') ||
+            type.includes('node') ||
+            name.includes('node') ||
+            name === 'll' ||
+            name.includes('link') ||
+            name === 'head'
+        ) {
+            map[key] = 'linked_list';
+        }
+        // 3. Trees (Binary Trees, BSTs)
+        else if (
+            name.includes('tree') ||
+            name.includes('root') ||
+            type.includes('tree')
+        ) {
+            map[key] = 'binary_tree';
+        }
+        // 4. Stacks
+        else if (
+            name.includes('stack') ||
+            type.includes('stack')
+        ) {
+            map[key] = 'stack';
+        }
+        // 5. Queues
+        else if (
+            name.includes('queue') ||
+            name.includes('q_') ||
+            type.includes('queue') ||
+            type.includes('deque')
+        ) {
+            map[key] = 'queue';
+        }
+        // 6. Sets
+        else if (
+            name.includes('set') ||
+            name.includes('visited') ||
+            type.includes('set')
+        ) {
+            map[key] = 'set';
+        }
+        // 7. Heaps
+        else if (
+            name.includes('heap') ||
+            name.includes('pq')
+        ) {
+            map[key] = 'heap';
+        }
+        // 8. Dictionaries
+        else if (
+            name.includes('dict') ||
+            name.includes('map') ||
+            name.includes('memo')
+        ) {
+            map[key] = 'dictionary';
+        }
+        // ... inside inferVariableMap function ...
+
+        // 3. Trees (Binary Trees, BSTs)
+        else if (
+            name.includes('tree') ||
+            name.includes('root') ||
+            type.includes('tree') ||
+            type.includes('bst') // <--- ADD THIS! (Catches "BST" class)
+        ) {
+            map[key] = 'binary_tree';
+        }
+    }
+    return map;
+};
 
 // --- StateVisualizer Component (UPGRADED) ---
 const StateVisualizer = ({ variables, variableMap, isFinished }) => {
@@ -571,8 +797,8 @@ const StateVisualizer = ({ variables, variableMap, isFinished }) => {
         if (isFinished) return <div className="mt-4 p-2 text-center text-green-400 bg-green-900/50 rounded border border-green-700">Execution Finished!</div>;
         return <p className="text-gray-500 text-xs italic">(No variables to show for this step)</p>;
     }
-
-    const vizMap = variableMap || {};
+    // This calls the function you defined!
+    const vizMap = variableMap || inferVariableMap(variables);
     // --- Add treeVar ---
     let graphVar = null, stackVar = null, queueVar = null, dictVar = null, setVar = null, heapVar = null, linkedListVar = null, treeVar = null;
 
@@ -626,7 +852,7 @@ const StateVisualizer = ({ variables, variableMap, isFinished }) => {
 
             {/* --- RENDER THE BINARY TREE VISUALIZER --- */}
             {treeData && (
-                <BinaryTreeVisualizer name={treeVar} root={treeData} />
+                <BinaryTreeVisualizer name={treeVar} root={treeData} variables={variables} /> // <-- Added variables={variables}
             )}
 
             {/* Add a divider if we had special viz AND we have other vars */}
