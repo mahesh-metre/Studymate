@@ -1,29 +1,50 @@
+import multiprocessing
+
+# IMPORTANT: set start method BEFORE importing modules that may spawn processes
+# This avoids fork-related issues on platforms and hosting providers (Render/Gunicorn).
+try:
+    multiprocessing.set_start_method("spawn", force=True)
+except RuntimeError:
+    # already set; ignore
+    pass
+
+import os
+import httpx
 from pathlib import Path
 from typing import List, Dict, Any
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
+import asyncio
+import time
 
-# --- Import AI and tracing functions ---
-from backend.tracer import trace_python_code
-# --- 1. Import the new variable mapper function ---
-from backend.ai_explainer import get_ai_explanation, get_ai_summary, get_ai_variable_map
+# --- Import algorithm and AI helpers (these import tracer which uses multiprocessing) ---
+from algorithms.wavearray import wavearray_steps
+from algorithms.bfs import bfs_steps
+from algorithms.dfs import dfs_steps
+from tracer import safe_trace_python_code
+from ai_explainer import get_ai_explanation, get_ai_summary, get_ai_variable_map
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-BACKEND_DIR = PROJECT_ROOT / "backend"
-CPP_DIR = BACKEND_DIR / "cpp"
+# --- Project setup ---
+PROJECT_ROOT = Path(__file__).resolve().parent
+CPP_DIR = PROJECT_ROOT / "cpp"
+TRACE_TIMEOUT = int(os.getenv("TRACE_TIMEOUT", "15"))
 
 app = FastAPI(title="Algorithms API", version="1.0.0")
 
+# --- CORS middleware ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allow all origins for demo; tighten for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Request Models ---
+# ---------------------------------------------------------------------
+# ✅ Request Models
+# ---------------------------------------------------------------------
 class WaveArrayRequest(BaseModel):
     numbers: List[int]
 
@@ -33,73 +54,160 @@ class GraphRequest(BaseModel):
 
 class CodeExecutionRequest(BaseModel):
     code: str
-    inputs: List[str] = [] # For handling user input
+    inputs: List[str] = []  # Handles user input if provided
 
-class ExplainCodeRequest(BaseModel): 
+class ExplainCodeRequest(BaseModel):
     code_line: str
 
-# --- NEW: Request Model for Summary ---
 class SummarizeCodeRequest(BaseModel):
     code: str
-    trace: List[Dict[str, Any]] # Send the whole trace
+    trace: List[Dict[str, Any]]
 
+# ---------------------------------------------------------------------
+# Global concurrency control for expensive tracing
+# ---------------------------------------------------------------------
+# Limit simultaneous trace executions to avoid OOM on Render or too many processes.
+TRACE_CONCURRENCY_LIMIT = 2
+trace_semaphore = asyncio.Semaphore(TRACE_CONCURRENCY_LIMIT)
 
-# --- 2. Make the /visualize endpoint 'async def' ---
-@app.post("/python/visualize")
+# ---------------------------------------------------------------------
+# ✅ Algorithm Endpoints
+# ---------------------------------------------------------------------
+@app.post("/wavearray")
+def wavearray_py(req: WaveArrayRequest) -> Dict[str, Any]:
+    """Runs the wave array algorithm."""
+    return wavearray_steps(req.numbers)
+
+@app.post("/bfs")
+def bfs_py(req: GraphRequest) -> Dict[str, Any]:
+    """Runs the BFS algorithm."""
+    graph_int_keys = {int(k): v for k, v in req.graph.items()}
+    return bfs_steps(graph_int_keys, req.start)
+
+@app.post("/dfs")
+def dfs_py(req: GraphRequest) -> Dict[str, Any]:
+    """Runs the DFS algorithm."""
+    graph_int_keys = {int(k): v for k, v in req.graph.items()}
+    return dfs_steps(graph_int_keys, req.start)
+
+# ---------------------------------------------------------------------
+# ✅ AI-Powered Endpoints
+# ---------------------------------------------------------------------
+@app.post("/visualize")
 async def visualize_py(req: CodeExecutionRequest) -> Dict[str, Any]:
     """
-    Traces arbitrary Python code with user inputs.
-    Now also calls the AI to create a variable map.
+    Executes Python code and traces its logic in a safe subprocess.
+    Runs the blocking tracer in a threadpool so the event loop remains responsive.
     """
-    # 1. Run the tracer (this is synchronous)
-    trace_data = trace_python_code(req.code, req.inputs)
-    
+    print("🔹 /visualize called")
+    print("📌 code length:", len(req.code))
+    print("📌 inputs:", req.inputs)
+
+    # concurrency control
+    start_time = time.time()
+    await trace_semaphore.acquire()
+    try:
+        # run safe_trace_python_code (which itself uses multiprocessing) in a threadpool
+        trace_data = await run_in_threadpool(
+            safe_trace_python_code, req.code, req.inputs, TRACE_TIMEOUT
+        )
+    finally:
+        trace_semaphore.release()
+    elapsed = round(time.time() - start_time, 2)
+    print(f"🔹 Trace completed in {elapsed}s")
+
+    # post-process and limit trace size (prevent huge payloads)
+    try:
+        steps = trace_data.get("steps", [])
+        MAX_STEPS = 2000  # tune as needed
+        if isinstance(steps, list) and len(steps) > MAX_STEPS:
+            print(f"⚠️ Trace too large ({len(steps)} steps). Truncating to {MAX_STEPS}.")
+            trace_data["steps"] = steps[:MAX_STEPS]
+            trace_data["truncated"] = True
+    except Exception as e:
+        print(f"⚠️ Error while truncating trace: {e}")
+
     variable_map = {}
     try:
-        # 2. Get the final variables from the trace
-        if trace_data.get("steps"):
-            final_step_vars = trace_data["steps"][-1].get("variables", {})
-            var_names = list(final_step_vars.keys())
-            
-            # 3. Call the new async AI function
+        steps = trace_data.get("steps", [])
+        if steps:
+            final_vars = steps[-1].get("variables", {}) if isinstance(steps, list) else {}
+            var_names = list(final_vars.keys())
+
             if var_names:
+                print("🔹 Calling Gemini to analyze variables...")
+                # make Gemini call (async) — this will use configured timeouts in ai_explainer
                 variable_map = await get_ai_variable_map(req.code, var_names)
-                
+                print("✅ Variable mapping done")
     except Exception as e:
-        print(f"Error during variable mapping: {e}")
-        # Continue anyway, just with an empty map
-    
-    # 4. Add the map to the response
+        print(f"⚠️ Error during variable mapping: {e}")
+
     trace_data["variable_map"] = variable_map
-    
     return trace_data
 
-@app.post("/python/explain") 
-async def explain_py(req: ExplainCodeRequest) -> Dict[str, str]: 
-    """
-    Accepts a line of Python code and returns an AI-generated explanation.
-    """
+
+@app.post("/explain")
+async def explain_py(req: ExplainCodeRequest) -> Dict[str, str]:
+    """Returns a Gemini-generated explanation of a single line of Python code."""
     explanation = await get_ai_explanation(req.code_line)
     return {"explanation": explanation}
 
-# --- NEW: Endpoint for Summary ---
-@app.post("/python/summarize")
+
+@app.post("/summarize")
 async def summarize_py(req: SummarizeCodeRequest) -> Dict[str, str]:
-    """
-    Accepts the full code and trace, and returns an AI-generated summary.
-    """
+    """Generates a summary of the given code and its final execution trace."""
     if not req.trace:
         return {"summary": "Execution trace is empty, cannot generate summary."}
-        
-    # Send only the final step to the AI to save tokens
+
     final_step = req.trace[-1]
     summary = await get_ai_summary(req.code, final_step)
     return {"summary": summary}
 
+# ---------------------------------------------------------------------
+# ✅ Diagnostic / Utility Routes
+# ---------------------------------------------------------------------
+@app.get("/check-network")
+async def check_network():
+    """Check if the backend can reach the internet."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get("https://www.google.com")
+            return {"status": r.status_code}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/test-gemini")
+async def test_gemini():
+    import time
+    import httpx
+
+    start = time.time()
+    try:
+        # ✅ All four timeout parameters defined
+        timeout = httpx.Timeout(connect=5.0, read=5.0, write=5.0, pool=5.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            r = await client.get("https://generativelanguage.googleapis.com")
+            return {
+                "status": r.status_code,
+                "elapsed": round(time.time() - start, 2)
+            }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "elapsed": round(time.time() - start, 2)
+        }
+
+@app.get("/test-multiprocessing")
+def test_mp():
+    import multiprocessing, time
+    def worker(q): q.put("ok")
+    q = multiprocessing.Queue()
+    p = multiprocessing.Process(target=worker, args=(q,))
+    p.start()
+    p.join(3)
+    return {"alive": p.is_alive()}
 
 @app.get("/")
 def root() -> dict:
-    """
-    Root endpoint for health check.
-    """
+    """Health check endpoint."""
     return {"status": "ok"}
