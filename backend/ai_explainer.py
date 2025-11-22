@@ -4,9 +4,9 @@ from typing import List # <-- NEW: Import List for type hinting
 
 # httpx handles JSON encoding/decoding automatically.
 
-# The API key is an empty string. The Canvas environment will securely
-# provide the necessary credentials for this to work.
-API_KEY = "AIzaSyD9FKMcEI5wWgx3Gc3cZ3G4YimR4G-lkr4"
+import os
+API_KEY = os.getenv("GEMINI_API_KEY")
+
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key={API_KEY}"
 
 # This system prompt guides the AI to be a helpful tutor
