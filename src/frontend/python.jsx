@@ -702,92 +702,56 @@ const VariableDisplay = ({ variables, variableMap }) => {
 }
 const inferVariableMap = (variables) => {
     const map = {};
+
     for (const [key, value] of Object.entries(variables)) {
         const name = key.toLowerCase();
-        let type = "";
+        const type = value?.__type__?.toLowerCase() || "";
 
-        // Get Python Class Name if available (e.g., "LinkedStack", "Queue")
-        if (value && typeof value === 'object' && value.__type__) {
-            type = value.__type__.toLowerCase();
+        // 1. PRIORITY: Detect by Python class __type__
+        if (type.includes("graph")) {
+            map[key] = "graph";
+            continue;
+        }
+        if (type.includes("stack")) {
+            map[key] = "stack";
+            continue;
+        }
+        if (type.includes("queue") || type.includes("deque")) {
+            map[key] = "queue";
+            continue;
+        }
+        if (type.includes("heap") || type.includes("priority")) {
+            map[key] = "heap";
+            continue;
+        }
+        if (type.includes("node") || type.includes("linked")) {
+            map[key] = "linked_list";
+            continue;
+        }
+        if (type.includes("tree") || type.includes("bst")) {
+            map[key] = "binary_tree";
+            continue;
+        }
+        if (type.includes("dict") || type.includes("map")) {
+            map[key] = "dictionary";
+            continue;
+        }
+        if (type.includes("set")) {
+            map[key] = "set";
+            continue;
         }
 
-        // --- PRIORITY DETECTION LOGIC ---
-
-        // 1. Graphs (Distinct structure)
-        if (name.includes('graph') || type.includes('graph')) {
-            map[key] = 'graph';
-        }
-        // 2. Linked Lists (CRITICAL: Check this BEFORE Stack/Queue)
-        // This ensures 'LinkedStack' is visualized as a Linked List (Nodes), not a Stack (Array)
-        else if (
-            type.includes('linked') ||
-            type.includes('node') ||
-            name.includes('node') ||
-            name === 'll' ||
-            name.includes('link') ||
-            name === 'head'
-        ) {
-            map[key] = 'linked_list';
-        }
-        // 3. Trees (Binary Trees, BSTs)
-        else if (
-            name.includes('tree') ||
-            name.includes('root') ||
-            type.includes('tree')
-        ) {
-            map[key] = 'binary_tree';
-        }
-        // 4. Stacks
-        else if (
-            name.includes('stack') ||
-            type.includes('stack')
-        ) {
-            map[key] = 'stack';
-        }
-        // 5. Queues
-        else if (
-            name.includes('queue') ||
-            name.includes('q_') ||
-            type.includes('queue') ||
-            type.includes('deque')
-        ) {
-            map[key] = 'queue';
-        }
-        // 6. Sets
-        else if (
-            name.includes('set') ||
-            name.includes('visited') ||
-            type.includes('set')
-        ) {
-            map[key] = 'set';
-        }
-        // 7. Heaps
-        else if (
-            name.includes('heap') ||
-            name.includes('pq')
-        ) {
-            map[key] = 'heap';
-        }
-        // 8. Dictionaries
-        else if (
-            name.includes('dict') ||
-            name.includes('map') ||
-            name.includes('memo')
-        ) {
-            map[key] = 'dictionary';
-        }
-        // ... inside inferVariableMap function ...
-
-        // 3. Trees (Binary Trees, BSTs)
-        else if (
-            name.includes('tree') ||
-            name.includes('root') ||
-            type.includes('tree') ||
-            type.includes('bst') // <--- ADD THIS! (Catches "BST" class)
-        ) {
-            map[key] = 'binary_tree';
-        }
+        // 2. Secondary: Name-based detection
+        if (name.includes("graph")) map[key] = "graph";
+        else if (name.includes("stack")) map[key] = "stack";
+        else if (name.includes("queue")) map[key] = "queue";
+        else if (name.includes("heap") || name.includes("pq")) map[key] = "heap";
+        else if (name.includes("node") || name.includes("link")) map[key] = "linked_list";
+        else if (name.includes("tree") || name.includes("root")) map[key] = "binary_tree";
+        else if (name.includes("dict") || name.includes("map")) map[key] = "dictionary";
+        else if (name.includes("set") || name.includes("visited")) map[key] = "set";
     }
+
     return map;
 };
 
